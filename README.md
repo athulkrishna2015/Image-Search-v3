@@ -1,6 +1,27 @@
 # [Image Search v3](https://ankiweb.net/shared/info/178037783)
 
+
 Image Search v3 is a powerful Anki add-on that lets you quickly find and add images to your cards directly from the editor. It searches for images based on the content of your fields or selected text and places the chosen image into a designated field.
+
+## Update (2025-10-31)
+
+- Smart Replace now replaces only images inserted by this add-on (identified by class="imgsearch") and never overwrites existing text or manually pasted images; if no prior add-on image exists, it appends instead. 
+
+- Default placement is “replace” in code and settings, but it remains non-destructive: original field content is preserved and only prior add-on images are swapped. 
+
+- Right‑click context menu is registered using gui_hooks.editor_will_show_context_menu with a legacy fallback for older builds, so “Search image for selection” appears reliably. 
+
+- Yandex request pipeline hardened: explicit timeouts, limited retries with backoff, and robust JSON checks to avoid KeyError/TypeError on slow or offline networks. 
+
+- Media downloads are offline-aware: quick DNS check, structured error codes (offline/network/unexpected), and a single concise user message instead of duplicate popups. 
+
+- Per-note-type settings dialog: Save no longer closes the dialog; defaults initialize placement to “replace,” first field for queries, and last field for images. 
+
+- Safer field resolution: if a configured image field is missing, the add-on falls back to the last field and warns; query field selection falls back to the first field. 
+
+- Default config simplified: global image_field removed; query_fields defaults to ["Front"] for cleaner per-note-type configuration. 
+
+
 
 ## Features
 
@@ -55,19 +76,6 @@ There are three ways to search for an image in the card editor:
 If the "Search image for..." option does not appear when you right-click on selected text, it might be due to a conflict with another add-on that also modifies the context menu. A common conflict is with add-ons that provide image editing or other right-click functionalities in the editor.
 
 You can diagnose this by temporarily disabling other editor-related add-ons (like "Image Editor") via **Tools -> Add-ons**, restarting Anki, and checking if the menu item appears.
-
-### Other errors
-```
-Could not find the configured image field ('Image') in the current note type ('Basic').
-Available fields: Front, Back, extra_1
-Please review your settings for this note type.
-```
-
-1.  Go to **Tools -> Image Search v3 Settings** from Anki's main window.
-2.  The settings dialog will open. On the left, you will see a list of all your note types.
-3.  Select the note type from the list.
-4. Reset to Default
-
 
 ## License
 
