@@ -1,4 +1,3 @@
 {
-    "query_fields": ["Text", "Front", "English"],
-    "image_field": "Image"
+  "query_fields": ["Front"]
 }
