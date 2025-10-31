@@ -1,4 +1,4 @@
-# Image Search v3
+# [Image Search v3](https://ankiweb.net/shared/info/178037783)
 
 Image Search v3 is a powerful Anki add-on that lets you quickly find and add images to your cards directly from the editor. It searches for images based on the content of your fields or selected text and places the chosen image into a designated field.
 
@@ -30,7 +30,8 @@ Before using the add-on, it's best to configure it for your note types.
 
 **Note:** This add-on uses Yandex as its exclusive image search provider. The option to choose a different search engine has been removed.
 
-![New Settings Panel](./images/settings.png)
+<img width="1214" height="737" alt="Screenshot_20251031_152138" src="https://github.com/user-attachments/assets/05a9f121-2a64-4de6-bfc6-cf9c8e664467" />
+
 
 ### 2. Searching for Images
 
@@ -42,7 +43,10 @@ There are three ways to search for an image in the card editor:
 2.  **Using the Right-Click Menu**: Highlight the text you want to search for, right-click it, and select **"Search image for: '...'"** from the context menu.
 3.  **Browsing Results**: Use the **"Previous Image"** and **"Next Image"** buttons (the arrows) to browse through other image results for the last query that was performed from the query field(s).
 
-![Editor Buttons](./images/example.png)
+<img width="2396" height="2044" alt="Screenshot_20251031_152224" src="https://github.com/user-attachments/assets/d311adb6-0313-4b65-9999-bc8aef374c5a" />
+<img width="2396" height="2044" alt="Screenshot_20251031_152301" src="https://github.com/user-attachments/assets/f4c23fd3-0646-411a-a105-3120da3adda5" />
+<img width="2396" height="2044" alt="Screenshot_20251031_152339" src="https://github.com/user-attachments/assets/ad8558af-233b-4fe5-a67f-1e869d76eb07" />
+
 
 ## Troubleshooting
 
