@@ -56,6 +56,19 @@ If the "Search image for..." option does not appear when you right-click on sele
 
 You can diagnose this by temporarily disabling other editor-related add-ons (like "Image Editor") via **Tools -> Add-ons**, restarting Anki, and checking if the menu item appears.
 
+### Other errors
+```
+Could not find the configured image field ('Image') in the current note type ('Basic').
+Available fields: Front, Back, extra_1
+Please review your settings for this note type.
+```
+
+1.  Go to **Tools -> Image Search v3 Settings** from Anki's main window.
+2.  The settings dialog will open. On the left, you will see a list of all your note types.
+3.  Select the note type from the list.
+4. Reset to Default
+
+
 ## License
 
 This add-on is a modification of the work of original authors. Credit goes to the creators of [Anki Image Search v2](https://ankiweb.net/shared/info/432495333) and [Image Search](https://ankiweb.net/shared/info/885589449).
