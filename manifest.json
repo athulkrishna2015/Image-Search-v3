@@ -1,3 +1,15 @@
 {
-    "name": "Image Search v3"
+  "package": "178037783",
+  "name": "Image Search v3",
+  "author": "You",
+  "version": "3.6.1-public",
+  "homepage": "https://ankiweb.net/shared/info/178037783",
+  "mod": 0,
+  "min_point_version": 25,
+  "max_point_version": 25,
+  "branch_index": 0,
+  "disabled": false,
+  "config": {
+    "query_fields": ["Front"]
+  }
 }
