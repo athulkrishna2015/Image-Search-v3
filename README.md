@@ -1,5 +1,8 @@
-# [Image Search v3](https://ankiweb.net/shared/info/178037783)
+# Image Search v3
 
+[Download from Anki Web](https://ankiweb.net/shared/info/178037783)
+
+[github](https://github.com/athulkrishna2015/Image-Search-v3)
 
 Image Search v3 is a powerful Anki add-on that lets you quickly find and add images to your cards directly from the editor. It searches for images based on the content of your fields or selected text and places the chosen image into a designated field.
 
