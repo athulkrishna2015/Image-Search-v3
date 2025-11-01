@@ -12,7 +12,6 @@ Image Search v3 is a powerful Anki add-on that lets you quickly find and add ima
 - New Settings layout with two tabs: Note Types and Network.  
 - Network tab exposes three global, runtime network controls: Request timeout (s), Max retries, and Backoff base (s).  
 - Yandex requests now read these values at runtime; changes apply immediately after saving, no Anki restart needed.  
-- Keeps non-destructive “Smart Replace” behavior (swap only images previously inserted by this add‑on).
 
 ## Update (2025-10-31)
 
