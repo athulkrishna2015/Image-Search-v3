@@ -51,7 +51,9 @@ Before using the add-on, it's best to configure it for your note types.
 
 **Note:** This add-on uses Yandex as its exclusive image search provider. The option to choose a different search engine has been removed.
 
-<img width="1214" height="737" alt="Screenshot_20251031_152138" src="https://github.com/user-attachments/assets/05a9f121-2a64-4de6-bfc6-cf9c8e664467" />
+<img width="1242" height="859" alt="Screenshot_20251101_114935" src="https://github.com/user-attachments/assets/852aac8e-5529-47ec-a955-36cb551fd453" />
+
+<img width="1242" height="859" alt="Screenshot_20251101_114939" src="https://github.com/user-attachments/assets/17dba26c-4e80-4460-8d63-ab8b368ad239" />
 
 
 ### 2. Searching for Images
