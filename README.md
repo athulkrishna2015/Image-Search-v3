@@ -6,6 +6,14 @@
 
 Image Search v3 is a powerful Anki add-on that lets you quickly find and add images to your cards directly from the editor. It searches for images based on the content of your fields or selected text and places the chosen image into a designated field.
 
+
+## Update (2025-11-01)
+
+- New Settings layout with two tabs: Note Types and Network.  
+- Network tab exposes three global, runtime network controls: Request timeout (s), Max retries, and Backoff base (s).  
+- Yandex requests now read these values at runtime; changes apply immediately after saving, no Anki restart needed.  
+- Keeps non-destructive “Smart Replace” behavior (swap only images previously inserted by this add‑on).
+
 ## Update (2025-10-31)
 
 - Smart Replace now replaces only images inserted by this add-on (identified by class="imgsearch") and never overwrites existing text or manually pasted images; if no prior add-on image exists, it appends instead. 
