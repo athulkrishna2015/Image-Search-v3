@@ -75,7 +75,7 @@ def on_search(editor):
     last_query = query
     image_url = search.get_result_by_query(query)
     if not image_url:
-        utils.report("No images found for the query.")
+        utils.report("No images found for the query. [A slow or unstable internet connection might be the cause.]")
         return
 
     image_dest_field_index = utils.get_note_image_field_index(editor.note)
