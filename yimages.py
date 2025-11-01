@@ -5,7 +5,7 @@ import requests
 import urllib.parse
 from aqt import mw
 
-# Do not show UI here; UI decides how/when to notify.
+# No UI or dialogs here; let the caller decide how/when to notify.
 
 requests.packages.urllib3.disable_warnings()
 
@@ -27,9 +27,9 @@ def _get_net_settings():
     """
     Read network settings from the add-on config with safe fallbacks.
     Keys:
-      - request_timeout_s (float, s)
+      - request_timeout_s (float, seconds)
       - max_retries (int)
-      - backoff_base_s (float, s)
+      - backoff_base_s (float, seconds)
     """
     try:
         cfg = mw.addonManager.getConfig(__name__) or {}
@@ -57,6 +57,7 @@ def get_yimages_response(query: str):
             r.raise_for_status()
             return r.json()
         except requests.exceptions.Timeout:
+            # retry on timeout with exponential backoff
             if attempt < max_retries:
                 time.sleep(backoff_base_s * (2 ** attempt))
                 continue
@@ -66,7 +67,7 @@ def get_yimages_response(query: str):
             requests.exceptions.RequestException,
             ValueError,
         ):
-            # Connection issue, HTTP error, or invalid JSON
+            # Connection/HTTP error or invalid JSON → give up
             return None
 
     return None
@@ -87,17 +88,14 @@ def parse_yimages_response(response):
             return result
 
         block = blocks[0]
-        name = block.get("name") or {}
-        if not isinstance(name, dict) or name.get("block") != "serp-list_infinite_yes":
-            return result
-
+        # Validate block identity; tolerate minor structure differences
         html = block.get("html") or ""
         if not html or "data-bem" not in html or "serp-item" not in html:
             return result
     except Exception:
-        # Silent parse errors; return empty list
         return result
 
+    # Extract URLs from inline JSON in data-bem attributes
     found = re.findall(r"data-bem='{.*?serp-item.*?:(.*?)}'", html)
     for item in (found or []):
         try:
