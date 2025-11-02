@@ -1,17 +1,6 @@
-# Image Search v3
-
-[Download from Anki Web](https://ankiweb.net/shared/info/178037783)
-
-[github](https://github.com/athulkrishna2015/Image-Search-v3)
+# [Image Search v3](https://ankiweb.net/shared/info/178037783)
 
 Image Search v3 is a powerful Anki add-on that lets you quickly find and add images to your cards directly from the editor. It searches for images based on the content of your fields or selected text and places the chosen image into a designated field.
-
-
-## Update (2025-11-01)
-
-- New Settings layout with two tabs: Note Types and Network.  
-- Network tab exposes three global, runtime network controls: Request timeout (s), Max retries, and Backoff base (s).  
-- Yandex requests now read these values at runtime; changes apply immediately after saving, no Anki restart needed.  
 
 ## Update (2025-10-31)
 
@@ -61,9 +50,7 @@ Before using the add-on, it's best to configure it for your note types.
 
 **Note:** This add-on uses Yandex as its exclusive image search provider. The option to choose a different search engine has been removed.
 
-<img width="1242" height="859" alt="Screenshot_20251101_114935" src="https://github.com/user-attachments/assets/852aac8e-5529-47ec-a955-36cb551fd453" />
-
-<img width="1242" height="859" alt="Screenshot_20251101_114939" src="https://github.com/user-attachments/assets/17dba26c-4e80-4460-8d63-ab8b368ad239" />
+<img width="1214" height="737" alt="Screenshot_20251031_152138" src="https://github.com/user-attachments/assets/05a9f121-2a64-4de6-bfc6-cf9c8e664467" />
 
 
 ### 2. Searching for Images

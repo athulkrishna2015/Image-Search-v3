@@ -1,4 +1,4 @@
-from anki.utils import stripHTMLMedia
+from anki.utils import strip_html_media
 
 from . import utils
 from .yimages import get_yimages
@@ -11,7 +11,7 @@ INDICES = {}
 
 
 def get_current_image_url_by_query(query):
-    query = stripHTMLMedia(query)
+    query = strip_html_media(query)
     if query not in YIMAGES or not YIMAGES[query] or \
             query not in INDICES or INDICES[query] < 0 or INDICES[query] >= len(YIMAGES[query]):
         return None
@@ -19,7 +19,7 @@ def get_current_image_url_by_query(query):
 
 
 def get_result_by_query(query):
-    query = stripHTMLMedia(query)
+    query = strip_html_media(query)
     if query not in YIMAGES or not len(YIMAGES[query]):
         image_urls = get_yimages(query)
         YIMAGES[query] = image_urls
@@ -33,7 +33,7 @@ def get_result_by_query(query):
 
 
 def get_next_result_by_query(query):
-    query = stripHTMLMedia(query)
+    query = strip_html_media(query)
     # Make sure the list of images for the query exists
     if query not in YIMAGES:
         return None
@@ -44,7 +44,7 @@ def get_next_result_by_query(query):
 
 
 def get_prev_result_by_query(query):
-    query = stripHTMLMedia(query)
+    query = strip_html_media(query)
     # Make sure the list of images for the query exists
     if query not in YIMAGES:
         return None
