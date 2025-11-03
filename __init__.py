@@ -1,9 +1,13 @@
-from .ui_editor import init_editor
-from .ui_menu import init_menu
+# init.py
+from __future__ import annotations
 
-def _init():
-    # Register editor buttons, context menu, and settings menu
+def setup() -> None:
+    """Register editor UI and settings menu."""
+    # Import inside the function to avoid circular imports / reload loops
+    from .ui_editor import init_editor
+    from .ui_menu import init_menu
     init_editor()
     init_menu()
 
-_init()
+# Run on module import (keeps behavior identical to your current file)
+setup()
