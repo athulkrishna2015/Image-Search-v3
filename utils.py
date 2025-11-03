@@ -29,13 +29,16 @@ def report(text: str):
     except Exception:
         print(text)
 
-
 def get_note_query(note):
+    """
+    Return the text to search for this note, using per‑notetype config first,
+    then global config, with Cloze‑aware and case‑insensitive matching.
+    """
     field_names = mw.col.models.fieldNames(note.model())
     config = get_config()
     nt_id = str(note.model()["id"])
 
-    # Determine preferred query fields (per-notetype first, then global)
+    # 1) Collect preferred query fields (per-notetype, then global)
     query_fields = []
     nt_configs = config.get("configs_by_notetype_id", {})
     if nt_id in nt_configs and nt_configs[nt_id].get("query_fields"):
@@ -45,12 +48,39 @@ def get_note_query(note):
     elif "query_field" in config:
         query_fields = [config["query_field"]]
 
-    if query_fields:
-        for fname in query_fields:
-            if fname in field_names:
-                return note.fields[field_names.index(fname)]
+    # Build a case-insensitive lookup of actual field names
+    field_lookup = {fn.strip().lower(): fn for fn in field_names}
 
-        # None of the configured fields exist; warn and fall back
+    def resolve_candidate(name: str) -> str | None:
+        """Return the actual field name to use, or None if not resolvable."""
+        key = (name or "").strip().lower()
+        # Exact (case-insensitive) match
+        if key in field_lookup:
+            return field_lookup[key]
+        # Cloze-friendly remaps:
+        # - 'Front' preference → 'Text' field on Cloze note types
+        if key == "front" and "text" in field_lookup:
+            return field_lookup["text"]
+        # (Optional) map generic 'Back' → 'Back Extra' if it exists on the model
+        if key == "back" and "back extra" in field_lookup:
+            return field_lookup["back extra"]
+        return None
+
+    # 2) Try configured fields in order
+    tried = []
+    for cand in (query_fields or []):
+        tried.append(cand)
+        actual = resolve_candidate(cand)
+        if actual is not None:
+            return note.fields[field_names.index(actual)]
+
+    # 3) Heuristic defaults before warning:
+    # Prefer "Text" automatically if available (common on Cloze)
+    if "text" in field_lookup:
+        return note.fields[field_names.index(field_lookup["text"])]
+
+    # 4) If config specified fields but none matched, warn once, then fall back
+    if query_fields:
         report(
             "Could not find any of the configured query fields in the current note type.\n"
             f"Note Type: {note.model()['name']}\n"
@@ -59,7 +89,7 @@ def get_note_query(note):
             "Falling back to the first field."
         )
 
-    # Default: first field if present
+    # 5) Final fallback: first field or empty string
     if field_names:
         return note.fields[0]
     return ""
