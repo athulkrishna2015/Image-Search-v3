@@ -1,19 +1,22 @@
 from aqt import mw
 from aqt.utils import qconnect
 from aqt.qt import *
-import json
-
 from . import utils
+
 
 class SettingsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
+
         self.setWindowTitle("Image Search v3 Settings")
-        self.setMinimumWidth(700)
+        self.setMinimumWidth(720)
 
         self.config = utils.get_config() or {}
         self.note_types = mw.col.models.all() if mw and mw.col else []
         self.dirty = False  # tracks unsaved changes
+
+        # Ensure status_label exists before any signal may trigger mark_dirty
+        self.status_label = QLabel("", self)
 
         # --- Root layout with tabs ---
         v_layout = QVBoxLayout(self)
@@ -71,13 +74,50 @@ class SettingsDialog(QDialog):
         self.right_layout.addLayout(nt_buttons_row)
 
         # =========================
-        # Tab 2: Network (global)
+        # Tab 2: Provider & Network (global)
         # =========================
         self.net_tab = QWidget(self)
         self.tabs.addTab(self.net_tab, "Network")
         net_v = QVBoxLayout(self.net_tab)
 
-        net_group = QGroupBox("Yandex request settings", self.net_tab)
+        # Provider group
+        prov_group = QGroupBox("Image provider", self.net_tab)
+        prov_form = QFormLayout(prov_group)
+
+        self.provider_combo = QComboBox(prov_group)
+        self.provider_combo.addItem("Yandex", "yandex")
+        self.provider_combo.addItem("Google (Custom Search)", "google")
+        self.provider_combo.currentIndexChanged.connect(self.mark_dirty)
+        curr_provider = (self.config.get("provider") or "yandex")
+        idx = self.provider_combo.findData(curr_provider)
+        if idx != -1:
+            self.provider_combo.setCurrentIndex(idx)
+        prov_form.addRow("Provider:", self.provider_combo)
+
+        self.google_key_edit = QLineEdit(prov_group)
+        self.google_key_edit.setPlaceholderText("AIza... (API key)")
+        self.google_key_edit.setText(self.config.get("google_api_key", ""))
+        self.google_key_edit.textChanged.connect(self.mark_dirty)
+        prov_form.addRow("Google API key:", self.google_key_edit)
+
+        self.google_cx_edit = QLineEdit(prov_group)
+        self.google_cx_edit.setPlaceholderText("cx like: 000000000000000000000:abcdefghi")
+        self.google_cx_edit.setText(self.config.get("google_cx", ""))
+        self.google_cx_edit.textChanged.connect(self.mark_dirty)
+        prov_form.addRow("Google CSE ID (cx):", self.google_cx_edit)
+
+        def _update_google_fields_enabled():
+            use_google = self.provider_combo.currentData() == "google"
+            self.google_key_edit.setEnabled(use_google)
+            self.google_cx_edit.setEnabled(use_google)
+
+        _update_google_fields_enabled()
+        self.provider_combo.currentIndexChanged.connect(lambda _=None: _update_google_fields_enabled())
+
+        net_v.addWidget(prov_group)
+
+        # Network group (timeouts/retries/backoff)
+        net_group = QGroupBox("Request settings", self.net_tab)
         net_form = QFormLayout(net_group)
 
         # Request timeout (s)
@@ -117,7 +157,7 @@ class SettingsDialog(QDialog):
         # =========================
         # Bottom status + buttons
         # =========================
-        self.status_label = QLabel("", self)
+        # Add the pre-created label to the layout now
         self.status_label.setStyleSheet("color: #2e7d32;")
         v_layout.addWidget(self.status_label)
 
@@ -131,7 +171,7 @@ class SettingsDialog(QDialog):
         button_box.rejected.connect(self.reject)
         v_layout.addWidget(button_box)
 
-        # Initialize first selection
+        # Initialize first selection (after status_label exists)
         if self.note_types:
             self.note_types_list.setCurrentRow(0)
 
@@ -157,7 +197,8 @@ class SettingsDialog(QDialog):
 
         self.load_note_type_config(self.note_types[self.note_types_list.row(current)])
         self.dirty = False
-        self.status_label.setText("")
+        if hasattr(self, "status_label") and self.status_label:
+            self.status_label.setText("")
 
     def load_note_type_config(self, note_type):
         # Block signals to avoid spurious dirty
@@ -225,7 +266,6 @@ class SettingsDialog(QDialog):
             "image_field": image_field,
             "image_placement": placement,
         }
-
         self.dirty = False
 
     def reset_nt_to_default(self):
@@ -237,8 +277,10 @@ class SettingsDialog(QDialog):
         self.query_fields_list.clearSelection()
         if self.query_fields_list.count() > 0:
             self.query_fields_list.item(0).setSelected(True)
+
         if self.image_field_combo.count() > 0:
             self.image_field_combo.setCurrentIndex(self.image_field_combo.count() - 1)
+
         self.placement_combo.setCurrentIndex(0)
 
         # Unblock
@@ -250,6 +292,9 @@ class SettingsDialog(QDialog):
 
     # ----- Network tab helpers -----
     def reset_net_to_default(self):
+        self.provider_combo.setCurrentIndex(self.provider_combo.findData("yandex"))
+        self.google_key_edit.setText("")
+        self.google_cx_edit.setText("")
         self.timeout_spin.setValue(10.0)
         self.retries_spin.setValue(5)
         self.backoff_spin.setValue(0.75)
@@ -258,7 +303,9 @@ class SettingsDialog(QDialog):
     # ----- Common -----
     def mark_dirty(self, *args):
         self.dirty = True
-        self.status_label.setText("")
+        # Defensive guard in case initialization was interrupted
+        if hasattr(self, "status_label") and self.status_label:
+            self.status_label.setText("")
 
     def save_only(self):
         # Save per-note-type for the currently selected model
@@ -266,22 +313,28 @@ class SettingsDialog(QDialog):
         if current_row >= 0:
             self.save_note_type_config(self.note_types[current_row])
 
-        # Save global network settings
+        # Save global provider + network
+        self.config["provider"] = self.provider_combo.currentData()
+        self.config["google_api_key"] = self.google_key_edit.text().strip()
+        self.config["google_cx"] = self.google_cx_edit.text().strip()
         self.config["request_timeout_s"] = float(self.timeout_spin.value())
         self.config["max_retries"] = int(self.retries_spin.value())
         self.config["backoff_base_s"] = float(self.backoff_spin.value())
 
-        # Clean old root-level keys if present
+        # Clean legacy root-level keys if present
         self.config.pop("query_fields", None)
         self.config.pop("query_field", None)
         self.config.pop("image_field", None)
         self.config.pop("search_engine", None)
 
-        mw.addonManager.writeConfig(__name__, self.config)
-
-        # Feedback
-        self.status_label.setText("Saved")
-        self.dirty = False
+        try:
+            mw.addonManager.writeConfig(__name__, self.config)
+            if hasattr(self, "status_label") and self.status_label:
+                self.status_label.setText("Saved.")
+            self.dirty = False
+        except Exception:
+            if hasattr(self, "status_label") and self.status_label:
+                self.status_label.setText("Could not save settings.")
 
 
 def settings_dialog():
