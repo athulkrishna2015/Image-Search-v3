@@ -1,7 +1,6 @@
 # ui_editor.py
 
 import re
-
 from aqt import mw
 from anki.hooks import addHook
 from . import utils
@@ -14,45 +13,41 @@ except Exception:
 
 last_query = None
 
-def _replace_last_imgsearch_tag(html: str, new_img_tag: str) -> str | None:
-    pattern = r'(<img\b[^>]*\bclass="[^"]*\bimgsearch\b[^"]*"[^>]*>)'
+
+def _replace_last_imgsearch_tag(html: str, new_img_tag: str):
+    pattern = r'(<img[^>]*\bclass="[^"]*\bimgsearch\b[^"]*"[^>]*>)'
     matches = list(re.finditer(pattern, html, flags=re.IGNORECASE))
     if not matches:
         return None
-    last = matches[-1]
-    start, end = last.span(1)
+    start, end = matches[-1].span(1)
     return html[:start] + new_img_tag + html[end:]
+
 
 def display_image(editor, img_filename, image_dest_field_index):
     img_tag = utils.image_tag(img_filename)
-
     config = utils.get_config()
-    nt_id = str(editor.note.model()['id'])
+    nt_id = str(editor.note.model()["id"])
     nt_configs = config.get("configs_by_notetype_id", {})
     nt_config = nt_configs.get(nt_id, {})
-
     placement = nt_config.get("image_placement", "replace")
 
-    current_content = editor.note.fields[image_dest_field_index]
+    current = editor.note.fields[image_dest_field_index]
 
     if placement == "append":
-        separator = " " if current_content else ""
-        editor.note.fields[image_dest_field_index] += separator + img_tag
+        sep = " " if current else ""
+        editor.note.fields[image_dest_field_index] = current + sep + img_tag
     elif placement == "prepend":
-        separator = " " if current_content else ""
-        editor.note.fields[image_dest_field_index] = img_tag + separator + current_content
+        sep = " " if current else ""
+        editor.note.fields[image_dest_field_index] = img_tag + sep + current
     else:
-        if current_content and current_content.strip():
-            replaced = _replace_last_imgsearch_tag(current_content, img_tag)
-            if replaced is not None:
-                editor.note.fields[image_dest_field_index] = replaced
-            else:
-                separator = " " if current_content else ""
-                editor.note.fields[image_dest_field_index] = current_content + separator + img_tag
+        if current and current.strip():
+            replaced = _replace_last_imgsearch_tag(current, img_tag)
+            editor.note.fields[image_dest_field_index] = replaced or (current + (" " if current else "") + img_tag)
         else:
             editor.note.fields[image_dest_field_index] = img_tag
 
     editor.loadNote()
+
 
 def _show_download_error(code: str):
     if code == "offline":
@@ -60,8 +55,8 @@ def _show_download_error(code: str):
     elif code == "network":
         utils.report("Network error while downloading image. Please try again in a moment.")
     else:
-        # 'unexpected' already reported by utils.save_file_to_library; keep a short notice here
         utils.report("Could not save image to media collection.")
+
 
 def on_search(editor):
     global last_query
@@ -73,104 +68,95 @@ def on_search(editor):
         return
 
     last_query = query
-    image_url = search.get_result_by_query(query)
+    image_url = search.getresultbyquery(query)
     if not image_url:
-        utils.report("No images found for the query. [A slow or unstable internet connection might be the cause.]")
+        utils.report("No images found for the query.")
         return
 
-    image_dest_field_index = utils.get_note_image_field_index(editor.note)
-    if image_dest_field_index is None:
+    idx = utils.get_note_image_field_index(editor.note)
+    if idx is None:
         utils.report("No destination field found on this note type.")
         return
 
     img_filename, err = utils.save_image_to_library(editor, image_url)
-    if err:
-        _show_download_error(err)
-        return
-    if not img_filename:
-        _show_download_error("unexpected")
+    if err or not img_filename:
+        _show_download_error(err or "unexpected")
         return
 
-    display_image(editor, img_filename, image_dest_field_index)
+    display_image(editor, img_filename, idx)
+
 
 def on_previous(editor):
     global last_query
     if not last_query:
         utils.report("No previous image search in this session.")
         return
-
-    image_url = search.get_prev_result_by_query(last_query)
-    if not image_url:
+    url = search.getprevresultbyquery(last_query)
+    if not url:
         utils.report("No previous image available for this query.")
         return
-
-    image_dest_field_index = utils.get_note_image_field_index(editor.note)
-    if image_dest_field_index is None:
+    idx = utils.get_note_image_field_index(editor.note)
+    if idx is None:
         utils.report("No destination field found on this note type.")
         return
-
-    img_filename, err = utils.save_image_to_library(editor, image_url)
-    if err:
-        _show_download_error(err)
+    img_filename, err = utils.save_image_to_library(editor, url)
+    if err or not img_filename:
+        _show_download_error(err or "unexpected")
         return
-    if not img_filename:
-        _show_download_error("unexpected")
-        return
+    display_image(editor, img_filename, idx)
 
-    display_image(editor, img_filename, image_dest_field_index)
 
 def on_next(editor):
     global last_query
     if not last_query:
         utils.report("No previous image search in this session.")
         return
-
-    image_url = search.get_next_result_by_query(last_query)
-    if not image_url:
+    url = search.getnextresultbyquery(last_query)
+    if not url:
         utils.report("No next image available for this query.")
         return
-
-    image_dest_field_index = utils.get_note_image_field_index(editor.note)
-    if image_dest_field_index is None:
+    idx = utils.get_note_image_field_index(editor.note)
+    if idx is None:
         utils.report("No destination field found on this note type.")
         return
-
-    img_filename, err = utils.save_image_to_library(editor, image_url)
-    if err:
-        _show_download_error(err)
+    img_filename, err = utils.save_image_to_library(editor, url)
+    if err or not img_filename:
+        _show_download_error(err or "unexpected")
         return
-    if not img_filename:
-        _show_download_error("unexpected")
-        return
-
-    display_image(editor, img_filename, image_dest_field_index)
+    display_image(editor, img_filename, idx)
 
 def add_editor_buttons(buttons, editor):
+    # Full paths to icons in images/
+    icon_search = utils.path_to("images", "image-2x.png")
+    icon_prev   = utils.path_to("images", "arrow-thick-left-2x.png")
+    icon_next   = utils.path_to("images", "arrow-thick-right-2x.png")
+
     b_search = editor.addButton(
-        utils.path_to("images", "image-2x.png"),
-        "imgsearch_search",
+        icon_search,
+        "imgsearch.search",
         lambda ed=editor: on_search(ed),
-        "Search image"
+        "Search image",
     )
     buttons.append(b_search)
 
     b_prev = editor.addButton(
-        utils.path_to("images", "arrow-thick-left-2x.png"),
-        "imgsearch_prev",
+        icon_prev,
+        "imgsearch.prev",
         lambda ed=editor: on_previous(ed),
-        "Previous image"
+        "Previous image",
     )
     buttons.append(b_prev)
 
     b_next = editor.addButton(
-        utils.path_to("images", "arrow-thick-right-2x.png"),
-        "imgsearch_next",
+        icon_next,
+        "imgsearch.next",
         lambda ed=editor: on_next(ed),
-        "Next image"
+        "Next image",
     )
     buttons.append(b_next)
 
     return buttons
+
 
 def _install_context_menu_modern():
     def on_ctx_menu(editor_webview, menu):
@@ -181,7 +167,9 @@ def _install_context_menu_modern():
         label = "Search image for selection" if sel else "Search image"
         action = menu.addAction(label)
         action.triggered.connect(lambda: on_search(editor))
+
     gui_hooks.editor_will_show_context_menu.append(on_ctx_menu)
+
 
 def _install_context_menu_legacy():
     def on_ctx_menu_legacy(webview, menu):
@@ -192,13 +180,16 @@ def _install_context_menu_legacy():
         label = "Search image for selection" if sel else "Search image"
         action = menu.addAction(label)
         action.triggered.connect(lambda: on_search(editor))
+
     addHook("EditorWebView.contextMenuEvent", on_ctx_menu_legacy)
+
 
 def add_editor_context_menu_install():
     if gui_hooks:
         _install_context_menu_modern()
     else:
         _install_context_menu_legacy()
+
 
 def init_editor():
     addHook("setupEditorButtons", add_editor_buttons)
