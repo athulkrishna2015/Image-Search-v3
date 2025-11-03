@@ -23,8 +23,8 @@ Image Search v3 is a powerful Anki add-on that lets you quickly find and add ima
 - Under Network, pick the provider; for Google, paste your API key and CSE ID (cx), and adjust timeout, retries, and backoff to suit your network.
 - Defaults ship with an empty key/cx and provider set to Yandex, and sane network values for reliable startup on new installs.
 
-
-<img width="1214" height="737" alt="Screenshot_20251031_152138" src="https://github.com/user-attachments/assets/05a9f121-2a64-4de6-bfc6-cf9c8e664467" />
+<img width="1242" height="859" alt="Screenshot_20251104_012633" src="https://github.com/user-attachments/assets/1f66f821-6169-462f-90fa-3674c36ac1f4" />
+<img width="1242" height="859" alt="Screenshot_20251104_020651" src="https://github.com/user-attachments/assets/5f56091d-61d6-4ad4-afea-beaaba3869bf" />
 
 
 ### 2. Searching for Images
