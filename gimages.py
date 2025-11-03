@@ -1,14 +1,14 @@
 # gimages.py
+
 import time
 import requests
 from aqt import mw
 
-# Keep requests quiet in Anki’s console
+# Keep requests quiet in Anki's console
 try:
     requests.packages.urllib3.disable_warnings()
 except Exception:
     pass
-
 
 def _get_net_settings():
     try:
@@ -20,7 +20,6 @@ def _get_net_settings():
     backoff_base_s = float(cfg.get("backoff_base_s", 0.75))
     return timeout_s, max_retries, backoff_base_s
 
-
 def _get_google_creds():
     try:
         cfg = mw.addonManager.getConfig(__name__) or {}
@@ -28,8 +27,7 @@ def _get_google_creds():
         cfg = {}
     return (cfg.get("google_api_key") or "").strip(), (cfg.get("google_cx") or "").strip()
 
-
-def get_gimages(query: str):
+def getgimages(query: str):
     """
     Returns a list of direct image URLs using Google Custom Search JSON API.
     If credentials are missing or a request fails, returns [].
@@ -39,7 +37,6 @@ def get_gimages(query: str):
         return []
 
     timeout_s, max_retries, backoff_base_s = _get_net_settings()
-
     base = "https://www.googleapis.com/customsearch/v1"
     params = {
         "key": api_key,
@@ -47,7 +44,7 @@ def get_gimages(query: str):
         "q": query,
         "searchType": "image",
         "safe": "active",
-        "num": 10,  # up to 10 per page for the JSON API
+        "num": 10,  # API limit per request
     }
 
     for attempt in range(max_retries + 1):
