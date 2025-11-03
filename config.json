@@ -1,3 +1,9 @@
 {
-  "query_fields": ["Front"]
+  "query_fields": ["Front"],
+  "provider": "yandex",
+  "google_api_key": "",
+  "google_cx": "",
+  "request_timeout_s": 10.0,
+  "max_retries": 5,
+  "backoff_base_s": 0.75
 }
