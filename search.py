@@ -34,10 +34,16 @@ def _current_url(q: str) -> str | None:
 def _provider_results(q: str) -> list[str]:
     cfg = utils.get_config() or {}
     provider = (cfg.get("provider") or "yandex").lower()
-    if provider == "google" and getgimages:
+    fallback_on = bool(cfg.get("google_fallback_to_yandex", True))
+
+    if provider == "google":
+        if not getgimages:
+            return _get_yandex(q) if fallback_on else []
         urls = getgimages(q)
         if urls:
             return urls
+        return _get_yandex(q) if fallback_on else []
+
     return _get_yandex(q)
 
 

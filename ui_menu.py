@@ -105,11 +105,20 @@ class SettingsDialog(QDialog):
         self.google_cx_edit.setText(self.config.get("google_cx", ""))
         self.google_cx_edit.textChanged.connect(self.mark_dirty)
         prov_form.addRow("Google CSE ID (cx):", self.google_cx_edit)
+        
+        # Fallback toggle
+        self.google_fallback_chk = QCheckBox(prov_group)
+        self.google_fallback_chk.setText("Fallback to Yandex if Google returns no results/errors")
+        self.google_fallback_chk.setChecked(bool(self.config.get("google_fallback_to_yandex", True)))
+        self.google_fallback_chk.toggled.connect(self.mark_dirty)
+        prov_form.addRow("Google fallback:", self.google_fallback_chk)
 
         def _update_google_fields_enabled():
             use_google = self.provider_combo.currentData() == "google"
             self.google_key_edit.setEnabled(use_google)
             self.google_cx_edit.setEnabled(use_google)
+            # NEW:
+            self.google_fallback_chk.setEnabled(use_google)
 
         _update_google_fields_enabled()
         self.provider_combo.currentIndexChanged.connect(lambda _=None: _update_google_fields_enabled())
@@ -298,6 +307,7 @@ class SettingsDialog(QDialog):
         self.timeout_spin.setValue(10.0)
         self.retries_spin.setValue(5)
         self.backoff_spin.setValue(0.75)
+        self.google_fallback_chk.setChecked(True)
         self.mark_dirty()
 
     # ----- Common -----
@@ -320,6 +330,7 @@ class SettingsDialog(QDialog):
         self.config["request_timeout_s"] = float(self.timeout_spin.value())
         self.config["max_retries"] = int(self.retries_spin.value())
         self.config["backoff_base_s"] = float(self.backoff_spin.value())
+        self.config["google_fallback_to_yandex"] = bool(self.google_fallback_chk.isChecked())
 
         # Clean legacy root-level keys if present
         self.config.pop("query_fields", None)

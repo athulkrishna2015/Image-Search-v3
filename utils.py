@@ -1,4 +1,5 @@
 # utils.py
+
 import os
 import socket
 import urllib.request
@@ -13,6 +14,15 @@ CURRENT_DIR = dirname(abspath(realpath(__file__)))
 _NET_CHECK_HOSTS = ("yandex.ru", "google.com", "1.1.1.1")
 _NET_CHECK_TIMEOUT_S = 1.0
 
+# Default HTTP headers for image downloads to avoid 403/blocks from many hosts
+_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/122.0.0.0 Safari/537.36"
+)
+_DEFAULT_REFERER = "https://www.google.com"
+_ACCEPT_IMG = "image/avif,image/webp,image/*,*/*;q=0.8"
+
 
 def path_to(*args):
     return os.path.join(CURRENT_DIR, *args)
@@ -25,9 +35,11 @@ def get_config():
 def report(text: str):
     try:
         from aqt.utils import showWarning
+
         showWarning(text, title="Image Search v3")
     except Exception:
         print(text)
+
 
 def get_note_query(note):
     """
@@ -119,6 +131,7 @@ def get_note_image_field_index(note):
                     f"Falling back to the last field: '{field_names[-1]}'."
                 )
                 return len(field_names) - 1
+
             report(
                 f"Could not find the configured image field ('{image_field}') in the current "
                 f"note type ('{note.model()['name']}'), and no fields are available."
@@ -150,6 +163,7 @@ def _network_available() -> bool:
 def _infer_suffix_from_url(url: str) -> str:
     try:
         from urllib.parse import urlparse
+
         path = urlparse(url).path.lower()
         for ext in (".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"):
             if path.endswith(ext):
@@ -159,10 +173,28 @@ def _infer_suffix_from_url(url: str) -> str:
     return ".jpg"
 
 
+def _download_bytes(image_url: str, timeout_s: float = 10.0) -> bytes:
+    """
+    Download bytes from image_url using a browser-like header set to avoid 403/blocks.
+    """
+    # Build a Request with headers commonly accepted by image CDNs/sites
+    req = urllib.request.Request(
+        image_url,
+        headers={
+            "User-Agent": _UA,
+            "Accept": _ACCEPT_IMG,
+            "Referer": _DEFAULT_REFERER,
+            "Accept-Language": "en-US,en;q=0.9",
+            "Connection": "keep-alive",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=timeout_s) as response:
+        return response.read()
+
+
 def save_file_to_library(editor, image_url, prefix, suffix):
     """
     Download image_url to a temp file and add it to Anki media.
-
     Returns (media_filename, error_code) where error_code is one of:
     - None (success)
     - 'offline' (clear offline case)
@@ -172,12 +204,19 @@ def save_file_to_library(editor, image_url, prefix, suffix):
     if not _network_available():
         return None, "offline"
 
+    # Allow the network timeout to be configurable via add-on config, default 10 s
+    timeout_s = 10.0
+    try:
+        cfg = get_config() or {}
+        timeout_s = float(cfg.get("request_timeout_s", 10.0))
+    except Exception:
+        pass
+
     try:
         (i_file, temp_path) = mkstemp(prefix=prefix, suffix=suffix)
         try:
-            with urllib.request.urlopen(image_url, timeout=10) as response:
-                image_binary = response.read()
-                os.write(i_file, image_binary)
+            image_binary = _download_bytes(image_url, timeout_s=timeout_s)
+            os.write(i_file, image_binary)
         finally:
             os.close(i_file)
 
@@ -190,6 +229,7 @@ def save_file_to_library(editor, image_url, prefix, suffix):
 
     except (urllib.error.URLError, urllib.error.HTTPError, socket.timeout):
         return None, "network"
+
     except Exception as e:
         report(f"Unexpected error while saving image\n\n{repr(e)}\n\n{image_url}")
         return None, "unexpected"
@@ -202,12 +242,14 @@ def save_image_to_library(editor, image_url):
     """
     if not image_url:
         return None, "network"
+
     prefix = "img_"
     try:
         if "id=" in image_url:
             prefix = image_url.split("id=")[1].split("&")[0] + "_"
     except Exception:
         pass
+
     suffix = _infer_suffix_from_url(image_url)
     return save_file_to_library(editor, image_url, prefix, suffix)
 
@@ -216,4 +258,5 @@ def image_tag(image_src):
     # Tag marked with class=imgsearch so only add-on images are targeted for replacement
     attrs = {"src": image_src, "class": "imgsearch"}
     tag_components = [f'{key}="{val}"' for key, val in attrs.items()]
-    return f"<img {' '.join(tag_components)} />"
+    return f'<img {" ".join(tag_components)}>'
+

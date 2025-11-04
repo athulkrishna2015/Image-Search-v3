@@ -5,5 +5,6 @@
   "google_cx": "",
   "request_timeout_s": 10.0,
   "max_retries": 5,
-  "backoff_base_s": 0.75
+  "backoff_base_s": 0.75,
+  "google_fallback_to_yandex": true
 }
