@@ -21,6 +21,8 @@ RESULTS: dict[str, list[str]] = {}
 # Current index per query
 INDICES: dict[str, int] = {}
 
+MAX_CACHED_QUERIES = 100
+
 
 def _current_url(q: str) -> str | None:
     if q not in RESULTS or not RESULTS[q]:
@@ -29,6 +31,20 @@ def _current_url(q: str) -> str | None:
     if idx < 0 or idx >= len(RESULTS[q]):
         return None
     return RESULTS[q][idx]
+
+
+def _touch_query(q: str) -> None:
+    if q in RESULTS:
+        RESULTS[q] = RESULTS.pop(q)
+    if q in INDICES:
+        INDICES[q] = INDICES.pop(q)
+
+
+def _evict_cache_if_needed() -> None:
+    while len(RESULTS) > MAX_CACHED_QUERIES:
+        oldest_query = next(iter(RESULTS))
+        RESULTS.pop(oldest_query, None)
+        INDICES.pop(oldest_query, None)
 
 
 def _provider_results(q: str) -> list[str]:
@@ -52,6 +68,8 @@ def getresultbyquery(query: str) -> str | None:
     if q not in RESULTS or not RESULTS[q]:
         RESULTS[q] = _provider_results(q)
         INDICES[q] = 0 if RESULTS[q] else -1
+    _touch_query(q)
+    _evict_cache_if_needed()
     return _current_url(q)
 
 

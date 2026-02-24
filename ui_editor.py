@@ -12,6 +12,8 @@ except Exception:
     gui_hooks = None
 
 last_query = None
+_HOOKS_INSTALLED = False
+_MW_HOOK_FLAG = "_imgsearchv3_editor_hooks_installed"
 
 
 def _replace_last_imgsearch_tag(html: str, new_img_tag: str):
@@ -192,5 +194,11 @@ def add_editor_context_menu_install():
 
 
 def init_editor():
+    global _HOOKS_INSTALLED
+    if _HOOKS_INSTALLED or (mw and getattr(mw, _MW_HOOK_FLAG, False)):
+        return
     addHook("setupEditorButtons", add_editor_buttons)
     add_editor_context_menu_install()
+    _HOOKS_INSTALLED = True
+    if mw:
+        setattr(mw, _MW_HOOK_FLAG, True)

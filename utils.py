@@ -144,6 +144,7 @@ def get_note_image_field_index(note):
 
 
 def _network_available() -> bool:
+    original_timeout = socket.getdefaulttimeout()
     try:
         socket.setdefaulttimeout(_NET_CHECK_TIMEOUT_S)
         for host in _NET_CHECK_HOSTS:
@@ -155,7 +156,7 @@ def _network_available() -> bool:
         return False
     finally:
         try:
-            socket.setdefaulttimeout(None)
+            socket.setdefaulttimeout(original_timeout)
         except Exception:
             pass
 
@@ -208,10 +209,11 @@ def save_file_to_library(editor, image_url, prefix, suffix):
     timeout_s = 10.0
     try:
         cfg = get_config() or {}
-        timeout_s = float(cfg.get("request_timeout_s", 10.0))
+        timeout_s = max(1.0, min(120.0, float(cfg.get("request_timeout_s", 10.0))))
     except Exception:
         pass
 
+    temp_path = None
     try:
         (i_file, temp_path) = mkstemp(prefix=prefix, suffix=suffix)
         try:
@@ -221,10 +223,6 @@ def save_file_to_library(editor, image_url, prefix, suffix):
             os.close(i_file)
 
         result_filename = editor.mw.col.media.addFile(temp_path)
-        try:
-            os.unlink(temp_path)
-        except Exception:
-            pass
         return result_filename, None
 
     except (urllib.error.URLError, urllib.error.HTTPError, socket.timeout):
@@ -233,6 +231,12 @@ def save_file_to_library(editor, image_url, prefix, suffix):
     except Exception as e:
         report(f"Unexpected error while saving image\n\n{repr(e)}\n\n{image_url}")
         return None, "unexpected"
+    finally:
+        if temp_path:
+            try:
+                os.unlink(temp_path)
+            except Exception:
+                pass
 
 
 def save_image_to_library(editor, image_url):
@@ -259,4 +263,3 @@ def image_tag(image_src):
     attrs = {"src": image_src, "class": "imgsearch"}
     tag_components = [f'{key}="{val}"' for key, val in attrs.items()]
     return f'<img {" ".join(tag_components)}>'
-

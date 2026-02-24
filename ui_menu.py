@@ -3,6 +3,23 @@ from aqt.utils import qconnect
 from aqt.qt import *
 from . import utils
 
+_MENU_INSTALLED = False
+_MW_MENU_FLAG = "_imgsearchv3_menu_installed"
+
+
+def _safe_float(value, default):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return float(default)
+
+
+def _safe_int(value, default):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return int(default)
+
 
 class SettingsDialog(QDialog):
     def __init__(self, parent=None):
@@ -13,9 +30,10 @@ class SettingsDialog(QDialog):
 
         self.config = utils.get_config() or {}
         self.note_types = mw.col.models.all() if mw and mw.col else []
-        self.dirty = False  # tracks unsaved changes
+        self.nt_dirty = False
+        self.net_dirty = False
 
-        # Ensure status_label exists before any signal may trigger mark_dirty
+        # Ensure status_label exists before any signal may trigger dirty handlers.
         self.status_label = QLabel("", self)
 
         # --- Root layout with tabs ---
@@ -47,13 +65,13 @@ class SettingsDialog(QDialog):
         self.right_layout.addWidget(QLabel("Query Fields (for searching):", right_side))
         self.query_fields_list = QListWidget(right_side)
         self.query_fields_list.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
-        self.query_fields_list.itemSelectionChanged.connect(self.mark_dirty)
+        self.query_fields_list.itemSelectionChanged.connect(self.mark_nt_dirty)
         self.right_layout.addWidget(self.query_fields_list)
 
         # Image Field
         self.right_layout.addWidget(QLabel("Image Field (for placing image):", right_side))
         self.image_field_combo = QComboBox(right_side)
-        self.image_field_combo.currentIndexChanged.connect(self.mark_dirty)
+        self.image_field_combo.currentIndexChanged.connect(self.mark_nt_dirty)
         self.right_layout.addWidget(self.image_field_combo)
 
         # Image Placement
@@ -62,7 +80,7 @@ class SettingsDialog(QDialog):
         self.placement_combo.addItem("Replace field content", "replace")
         self.placement_combo.addItem("Append to field", "append")
         self.placement_combo.addItem("Prepend to field", "prepend")
-        self.placement_combo.currentIndexChanged.connect(self.mark_dirty)
+        self.placement_combo.currentIndexChanged.connect(self.mark_nt_dirty)
         self.right_layout.addWidget(self.placement_combo)
 
         # Reset per-note-type defaults button
@@ -87,7 +105,7 @@ class SettingsDialog(QDialog):
         self.provider_combo = QComboBox(prov_group)
         self.provider_combo.addItem("Yandex", "yandex")
         self.provider_combo.addItem("Google (Custom Search)", "google")
-        self.provider_combo.currentIndexChanged.connect(self.mark_dirty)
+        self.provider_combo.currentIndexChanged.connect(self.mark_net_dirty)
         curr_provider = (self.config.get("provider") or "yandex")
         idx = self.provider_combo.findData(curr_provider)
         if idx != -1:
@@ -97,20 +115,20 @@ class SettingsDialog(QDialog):
         self.google_key_edit = QLineEdit(prov_group)
         self.google_key_edit.setPlaceholderText("AIza... (API key)")
         self.google_key_edit.setText(self.config.get("google_api_key", ""))
-        self.google_key_edit.textChanged.connect(self.mark_dirty)
+        self.google_key_edit.textChanged.connect(self.mark_net_dirty)
         prov_form.addRow("Google API key:", self.google_key_edit)
 
         self.google_cx_edit = QLineEdit(prov_group)
         self.google_cx_edit.setPlaceholderText("cx like: 000000000000000000000:abcdefghi")
         self.google_cx_edit.setText(self.config.get("google_cx", ""))
-        self.google_cx_edit.textChanged.connect(self.mark_dirty)
+        self.google_cx_edit.textChanged.connect(self.mark_net_dirty)
         prov_form.addRow("Google CSE ID (cx):", self.google_cx_edit)
         
         # Fallback toggle
         self.google_fallback_chk = QCheckBox(prov_group)
         self.google_fallback_chk.setText("Fallback to Yandex if Google returns no results/errors")
         self.google_fallback_chk.setChecked(bool(self.config.get("google_fallback_to_yandex", True)))
-        self.google_fallback_chk.toggled.connect(self.mark_dirty)
+        self.google_fallback_chk.toggled.connect(self.mark_net_dirty)
         prov_form.addRow("Google fallback:", self.google_fallback_chk)
 
         def _update_google_fields_enabled():
@@ -134,15 +152,15 @@ class SettingsDialog(QDialog):
         self.timeout_spin.setRange(1.0, 120.0)
         self.timeout_spin.setSingleStep(0.25)
         self.timeout_spin.setDecimals(2)
-        self.timeout_spin.setValue(float(self.config.get("request_timeout_s", 10.0)))
-        self.timeout_spin.valueChanged.connect(self.mark_dirty)
+        self.timeout_spin.setValue(_safe_float(self.config.get("request_timeout_s", 10.0), 10.0))
+        self.timeout_spin.valueChanged.connect(self.mark_net_dirty)
         net_form.addRow("Request timeout (s):", self.timeout_spin)
 
         # Max retries
         self.retries_spin = QSpinBox(net_group)
         self.retries_spin.setRange(0, 10)
-        self.retries_spin.setValue(int(self.config.get("max_retries", 5)))
-        self.retries_spin.valueChanged.connect(self.mark_dirty)
+        self.retries_spin.setValue(_safe_int(self.config.get("max_retries", 5), 5))
+        self.retries_spin.valueChanged.connect(self.mark_net_dirty)
         net_form.addRow("Max retries:", self.retries_spin)
 
         # Backoff base (s)
@@ -150,8 +168,8 @@ class SettingsDialog(QDialog):
         self.backoff_spin.setRange(0.05, 10.0)
         self.backoff_spin.setSingleStep(0.05)
         self.backoff_spin.setDecimals(2)
-        self.backoff_spin.setValue(float(self.config.get("backoff_base_s", 0.75)))
-        self.backoff_spin.valueChanged.connect(self.mark_dirty)
+        self.backoff_spin.setValue(_safe_float(self.config.get("backoff_base_s", 0.75), 0.75))
+        self.backoff_spin.valueChanged.connect(self.mark_net_dirty)
         net_form.addRow("Backoff base (s):", self.backoff_spin)
 
         net_v.addWidget(net_group)
@@ -186,7 +204,7 @@ class SettingsDialog(QDialog):
 
     # ----- Note-types tab logic -----
     def on_note_type_selected(self, current, previous):
-        if self.dirty and previous:
+        if self.nt_dirty and previous:
             ret = QMessageBox.question(
                 self,
                 "Unsaved Changes",
@@ -205,9 +223,8 @@ class SettingsDialog(QDialog):
             return
 
         self.load_note_type_config(self.note_types[self.note_types_list.row(current)])
-        self.dirty = False
-        if hasattr(self, "status_label") and self.status_label:
-            self.status_label.setText("")
+        self.nt_dirty = False
+        self.clear_status()
 
     def load_note_type_config(self, note_type):
         # Block signals to avoid spurious dirty
@@ -275,7 +292,7 @@ class SettingsDialog(QDialog):
             "image_field": image_field,
             "image_placement": placement,
         }
-        self.dirty = False
+        self.nt_dirty = False
 
     def reset_nt_to_default(self):
         # Temporarily block to avoid spurious dirty
@@ -297,7 +314,7 @@ class SettingsDialog(QDialog):
         self.image_field_combo.blockSignals(False)
         self.placement_combo.blockSignals(False)
 
-        self.mark_dirty()
+        self.mark_nt_dirty()
 
     # ----- Network tab helpers -----
     def reset_net_to_default(self):
@@ -308,14 +325,21 @@ class SettingsDialog(QDialog):
         self.retries_spin.setValue(5)
         self.backoff_spin.setValue(0.75)
         self.google_fallback_chk.setChecked(True)
-        self.mark_dirty()
+        self.mark_net_dirty()
 
     # ----- Common -----
-    def mark_dirty(self, *args):
-        self.dirty = True
-        # Defensive guard in case initialization was interrupted
+    def clear_status(self):
+        # Defensive guard in case initialization was interrupted.
         if hasattr(self, "status_label") and self.status_label:
             self.status_label.setText("")
+
+    def mark_nt_dirty(self, *args):
+        self.nt_dirty = True
+        self.clear_status()
+
+    def mark_net_dirty(self, *args):
+        self.net_dirty = True
+        self.clear_status()
 
     def save_only(self):
         # Save per-note-type for the currently selected model
@@ -342,7 +366,8 @@ class SettingsDialog(QDialog):
             mw.addonManager.writeConfig(__name__, self.config)
             if hasattr(self, "status_label") and self.status_label:
                 self.status_label.setText("Saved.")
-            self.dirty = False
+            self.nt_dirty = False
+            self.net_dirty = False
         except Exception:
             if hasattr(self, "status_label") and self.status_label:
                 self.status_label.setText("Could not save settings.")
@@ -354,6 +379,21 @@ def settings_dialog():
 
 
 def init_menu():
+    global _MENU_INSTALLED
+    if _MENU_INSTALLED or (mw and getattr(mw, _MW_MENU_FLAG, False)):
+        return
+    if not mw or not hasattr(mw, "form"):
+        return
+    for existing in mw.form.menuTools.actions():
+        if existing.objectName() == "imgsearchv3_settings_action" or existing.text() == "Image Search v3 Settings":
+            _MENU_INSTALLED = True
+            if mw:
+                setattr(mw, _MW_MENU_FLAG, True)
+            return
     action = QAction("Image Search v3 Settings", mw)
+    action.setObjectName("imgsearchv3_settings_action")
     qconnect(action.triggered, settings_dialog)
     mw.form.menuTools.addAction(action)
+    _MENU_INSTALLED = True
+    if mw:
+        setattr(mw, _MW_MENU_FLAG, True)

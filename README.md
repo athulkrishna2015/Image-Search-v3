@@ -58,6 +58,16 @@ If the "Search image for..." option does not appear when you right-click on sele
 
 You can diagnose this by temporarily disabling other editor-related add-ons (like "Image Editor") via **Tools -> Add-ons**, restarting Anki, and checking if the menu item appears.
 
+## Update (2026-02-24)
+
+- Security: removed insecure TLS behavior in Yandex requests (no disabled certificate verification/warnings suppression).
+- Reliability: hardened network config parsing (timeout/retries/backoff) with safe fallbacks and value bounds to avoid crashes from malformed config values.
+- Reliability: fixed temporary file cleanup to ensure downloaded temp files are deleted even when download/media import fails.
+- Stability: network availability check now restores the previous global socket timeout instead of mutating process-wide defaults.
+- UX/Data safety: fixed settings dialog dirty-state handling so switching note types does not silently discard unsaved Network tab changes.
+- UX/Stability: made editor hook and Tools menu registration idempotent to prevent duplicate toolbar/context-menu/menu entries on add-on reloads.
+- Performance: added a bounded in-memory query cache (LRU-style eviction) to prevent unbounded growth during long sessions.
+
 ## Update (2025-11-04)
 
 - Added Google provider using Custom Search JSON API with images; enter your Google API key and CSE ID (cx) in settings and select Google as provider, with automatic fallback to Yandex if Google returns no items.
