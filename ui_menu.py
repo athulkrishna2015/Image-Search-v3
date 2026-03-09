@@ -1,3 +1,4 @@
+import os
 from aqt import mw
 from aqt.utils import qconnect
 from aqt.qt import *
@@ -180,6 +181,74 @@ class SettingsDialog(QDialog):
         net_buttons_row.addWidget(self.reset_net_button)
         net_buttons_row.addStretch()
         net_v.addLayout(net_buttons_row)
+
+        # =========================
+        # Tab 3: Support
+        # =========================
+        self.support_tab = QWidget(self)
+        self.tabs.addTab(self.support_tab, "Support")
+        sup_v = QVBoxLayout(self.support_tab)
+
+        scroll = QScrollArea(self.support_tab)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        sup_v.addWidget(scroll)
+
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll.setWidget(scroll_content)
+
+        intro_label = QLabel("If you find this addon useful, please consider supporting the developer.")
+        intro_label.setWordWrap(True)
+        intro_label.setStyleSheet("font-weight: bold; margin-bottom: 10px;")
+        scroll_layout.addWidget(intro_label)
+
+        def add_support_section(title, address, img_name):
+            group = QGroupBox(title)
+            layout = QVBoxLayout(group)
+
+            # Horizontal layout for address and copy button
+            addr_h = QHBoxLayout()
+            addr_edit = QLineEdit(address)
+            addr_edit.setReadOnly(True)
+            addr_h.addWidget(addr_edit)
+
+            copy_btn = QPushButton("Copy")
+            copy_btn.setFixedWidth(60)
+            def copy_text():
+                QApplication.clipboard().setText(address)
+                self.status_label.setText(f"Copied {title} address to clipboard.")
+            copy_btn.clicked.connect(copy_text)
+            addr_h.addWidget(copy_btn)
+            
+            layout.addLayout(addr_h)
+
+            img_path = utils.path_to("Support", img_name)
+            if os.path.exists(img_path):
+                img_label = QLabel()
+                pixmap = QPixmap(img_path)
+                # Scale pixmap to fit nicely
+                scaled_pixmap = pixmap.scaled(
+                    400, 400, 
+                    Qt.AspectRatioMode.KeepAspectRatio, 
+                    Qt.TransformationMode.SmoothTransformation
+                )
+                img_label.setPixmap(scaled_pixmap)
+                img_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                img_label.setStyleSheet("margin-top: 5px; border: 1px solid #ccc; padding: 5px; background: white;")
+                layout.addWidget(img_label)
+            else:
+                error_label = QLabel(f"QR code not found at {img_path}.")
+                error_label.setStyleSheet("color: red;")
+                layout.addWidget(error_label)
+
+            scroll_layout.addWidget(group)
+
+        add_support_section("UPI (India)", "athulkrishnasv2015-2@okhdfcbank", "UPI.jpg")
+        add_support_section("Bitcoin (BTC)", "bc1qrrek3m7sr33qujjrktj949wav6mehdsk057cfx", "BTC.jpg")
+        add_support_section("Ethereum (ETH)", "0xce6899e4903EcB08bE5Be65E44549fadC3F45D27", "ETH.jpg")
+
+        scroll_layout.addStretch()
 
         # =========================
         # Bottom status + buttons
