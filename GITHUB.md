@@ -64,7 +64,12 @@ python new_version.py 3.x.y addon
 
 **Versioning rule:** the add-on version is always `3.<major>.<minor>`; the leading `3` is fixed.
 
-### 3. Creating a Release on GitHub
+### 3. Running Tests
+```shell
+python -m unittest discover tests
+```
+
+### 4. Creating a Release on GitHub
 1. **Commit and Tag**:
     ```bash
     git add .
