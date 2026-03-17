@@ -41,6 +41,27 @@ def report(text: str):
         print(text)
 
 
+def notify(text: str, period_ms: int = 2500):
+    """
+    Show a lightweight, non-blocking notification inside Anki.
+    Falls back to showInfo/print if tooltip is unavailable.
+    """
+    try:
+        from aqt.utils import tooltip
+
+        tooltip(text, period_ms)
+        return
+    except Exception:
+        pass
+
+    try:
+        from aqt.utils import showInfo
+
+        showInfo(text, title="Image Search v3")
+    except Exception:
+        print(text)
+
+
 def get_note_query(note):
     """
     Return the text to search for this note, using per‑notetype config first,

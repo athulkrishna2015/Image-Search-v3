@@ -1,0 +1,34 @@
+# Anki related
+meta.json
+addon/meta.json
+meta.json.bak
+Meta.json
+META.json
+
+# Build artifacts
+*.ankiaddon
+addon.zip
+Remove_Clozes_v*.ankiaddon
+Remove_Clozes_Cursor_aware_*.ankiaddon
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+venv/
+.venv/
+env/
+.env
+
+# Tests
+.coverage
+htmlcov/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.kate-swp

@@ -71,8 +71,10 @@ def on_search(editor):
 
     last_query = query
     image_url = search.getresultbyquery(query)
+    provider_label = search.get_provider_label(query)
+    utils.notify(f"Provider: {provider_label}")
     if not image_url:
-        utils.report("No images found for the query.")
+        utils.report(f"No images found for the query (provider: {provider_label}).")
         return
 
     idx = utils.get_note_image_field_index(editor.note)
@@ -128,16 +130,17 @@ def on_next(editor):
     display_image(editor, img_filename, idx)
 
 def add_editor_buttons(buttons, editor):
-    # Full paths to icons in images/
-    icon_search = utils.path_to("images", "image-2x.png")
-    icon_prev   = utils.path_to("images", "arrow-thick-left-2x.png")
-    icon_next   = utils.path_to("images", "arrow-thick-right-2x.png")
+    # Emoji toolbar labels (icon assets removed)
+    icon_search = ""
+    icon_prev = ""
+    icon_next = ""
 
     b_search = editor.addButton(
         icon_search,
         "imgsearch.search",
         lambda ed=editor: on_search(ed),
         "Search image",
+        "🖼",
     )
     buttons.append(b_search)
 
@@ -146,6 +149,7 @@ def add_editor_buttons(buttons, editor):
         "imgsearch.prev",
         lambda ed=editor: on_previous(ed),
         "Previous image",
+        "⬅",
     )
     buttons.append(b_prev)
 
@@ -154,6 +158,7 @@ def add_editor_buttons(buttons, editor):
         "imgsearch.next",
         lambda ed=editor: on_next(ed),
         "Next image",
+        "➡",
     )
     buttons.append(b_next)
 

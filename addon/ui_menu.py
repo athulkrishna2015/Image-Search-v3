@@ -105,9 +105,12 @@ class SettingsDialog(QDialog):
 
         self.provider_combo = QComboBox(prov_group)
         self.provider_combo.addItem("Yandex", "yandex")
+        self.provider_combo.addItem("DuckDuckGo (hidden API)", "duckduckgo")
         self.provider_combo.addItem("Google (Custom Search)", "google")
         self.provider_combo.currentIndexChanged.connect(self.mark_net_dirty)
         curr_provider = (self.config.get("provider") or "yandex")
+        if curr_provider == "ddg":
+            curr_provider = "duckduckgo"
         idx = self.provider_combo.findData(curr_provider)
         if idx != -1:
             self.provider_combo.setCurrentIndex(idx)
@@ -264,6 +267,8 @@ class SettingsDialog(QDialog):
         # Save should NOT close the dialog
         save_btn = button_box.button(QDialogButtonBox.StandardButton.Save)
         save_btn.clicked.connect(self.save_only)
+        save_close_btn = button_box.addButton("Save and Close", QDialogButtonBox.ButtonRole.AcceptRole)
+        save_close_btn.clicked.connect(self.save_and_close)
         button_box.rejected.connect(self.reject)
         v_layout.addWidget(button_box)
 
@@ -440,6 +445,10 @@ class SettingsDialog(QDialog):
         except Exception:
             if hasattr(self, "status_label") and self.status_label:
                 self.status_label.setText("Could not save settings.")
+
+    def save_and_close(self):
+        self.save_only()
+        self.accept()
 
 
 def settings_dialog():

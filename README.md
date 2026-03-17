@@ -6,13 +6,13 @@ Image Search v3 is a powerful Anki add-on that lets you quickly find and add ima
 
 ## Features
 
-- **Image provider**: Yandex (default) or Google Custom Search (images). When using Google, enter your API key and CSE ID (cx) under Tools → Image Search v3 Settings → Network. [Requires both key and cx] [searchType=image].
+- **Image provider**: Yandex (default), DuckDuckGo (hidden API), or Google Custom Search (images). When using Google, enter your API key and CSE ID (cx) under Tools → Image Search v3 Settings → Network. [Requires both key and cx] [searchType=image].
 - **Per-Note-Type Configuration**: Configure different query and image fields for each of your note types.
 - **Smart replace**: only replaces prior images inserted by this add‑on (class "imgsearch"), preserving user text and other content; appends when no prior add‑on image exists. 
 - **Graphical Settings Panel**: An easy-to-use settings panel to manage your configuration. No more manual file editing!
 - **Smart Defaults**: Automatically uses the first field of a note type for searching and the last field for placing the image if not configured otherwise.
 - **Search on Selection**: Simply highlight any text in the editor and use the search button or right-click context menu to search for an image.
-- **Toolbar Integration**: Adds "Search", "Previous", and "Next" image buttons directly to the Anki editor toolbar for a fast workflow.
+- **Toolbar Integration**: Adds 🖼, ⬅, and ➡ buttons directly to the Anki editor toolbar for a fast workflow.
 - **Right-Click Context Menu**: Right-click on highlighted text to instantly start an image search. 
 
 ## Usage
@@ -31,11 +31,11 @@ Image Search v3 is a powerful Anki add-on that lets you quickly find and add ima
 
 There are three ways to search for an image in the card editor:
 
-1.  **Using the Toolbar Button**: Click the **"Search Image"** button (the picture icon) on the editor toolbar.
+1.  **Using the Toolbar Button**: Click the 🖼 button on the editor toolbar.
     -   If you have text highlighted anywhere in the editor, that text will be used for the search.
     -   If no text is highlighted, the content of your configured **Query Field(s)** will be used.
 2.  **Using the Right-Click Menu**: Highlight the text you want to search for, right-click it, and select **"Search image for: '...'"** from the context menu.
-3.  **Browsing Results**: Use the **"Previous Image"** and **"Next Image"** buttons (the arrows) to browse through other image results for the last query that was performed from the query field(s).
+3.  **Browsing Results**: Use the ⬅ and ➡ buttons to browse through other image results for the last query that was performed from the query field(s).
 
 <img width="2396" height="2044" alt="Screenshot_20251031_152224" src="https://github.com/user-attachments/assets/d311adb6-0313-4b65-9999-bc8aef374c5a" />
 <img width="2396" height="2044" alt="Screenshot_20251031_152301" src="https://github.com/user-attachments/assets/f4c23fd3-0646-411a-a105-3120da3adda5" />
@@ -44,10 +44,13 @@ There are three ways to search for an image in the card editor:
 ## Provider notes
 
 - Yandex: no‑auth, undocumented JSON endpoint used by the front‑end; works well but may change, be geo‑restricted, or rate‑limited without prior notice.
+- DuckDuckGo: hidden `i.js` endpoint (no API key); works best‑effort and may change, rate‑limit, or block without notice. Falls back to Yandex if no results.
 - Google: official Custom Search JSON API with searchType=image; requires both [API key](https://console.cloud.google.com/apis/library/customsearch.googleapis.com?hl=en-GB) and [CSE (Google Search Engine) ID (cx)](https://programmablesearchengine.google.com/) and enforces quotas and billing on your account. 
-- Routing: when provider is Google, results are fetched from Google first and transparently fall back to Yandex if empty, preserving the editing flow.
+- Routing: when provider is Google or DuckDuckGo, results are fetched first and transparently fall back to Yandex if empty, preserving the editing flow.
 
  If you don't know how to get the API please read this: [google custom-search](https://programmablesearchengine.google.com/)
+
+Developer documentation lives in `GITHUB.md`.
 
 
 ## Troubleshooting
@@ -57,6 +60,12 @@ There are three ways to search for an image in the card editor:
 If the "Search image for..." option does not appear when you right-click on selected text, it might be due to a conflict with another add-on that also modifies the context menu. A common conflict is with add-ons that provide image editing or other right-click functionalities in the editor.
 
 You can diagnose this by temporarily disabling other editor-related add-ons (like "Image Editor") via **Tools -> Add-ons**, restarting Anki, and checking if the menu item appears.
+
+## Update (2026-03-17)
+
+- Added a DuckDuckGo (hidden API) provider option alongside Yandex (default) and Google.
+- Toolbar buttons now use emoji labels (🖼 ⬅ ➡) since image assets were removed.
+- Build/version scripts now enforce the `3.<major>.<minor>` scheme with a fixed leading `3`.
 
 ## Update (2026-02-24)
 
@@ -99,6 +108,6 @@ You can diagnose this by temporarily disabling other editor-related add-ons (lik
 
 This add-on is a modification of the work of original authors. Credit goes to the creators of [Anki Image Search v2](https://ankiweb.net/shared/info/432495333) and [Image Search](https://ankiweb.net/shared/info/885589449).
 
-The icons are provided by [Open Iconic](https://useiconic.com/open).
+Toolbar buttons use emoji labels to avoid bundling image assets.
 
 This project is licensed under the [GPLv2](./LICENSE).
