@@ -103,7 +103,6 @@ You can diagnose this by temporarily disabling other editor-related add-ons (lik
 
 - Default config simplified: global image_field removed; query_fields defaults to ["Front"] for cleaner per-note-type configuration. 
 
-
 ## License
 
 This add-on is a modification of the work of original authors. Credit goes to the creators of [Anki Image Search v2](https://ankiweb.net/shared/info/432495333) and [Image Search](https://ankiweb.net/shared/info/885589449).
