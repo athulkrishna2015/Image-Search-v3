@@ -1,6 +1,7 @@
 import os
 from aqt import mw
-from aqt.utils import qconnect
+from aqt.utils import qconnect, openLink
+from aqt.webview import AnkiWebView
 from aqt.qt import *
 from . import utils
 
@@ -192,6 +193,36 @@ class SettingsDialog(QDialog):
         self.tabs.addTab(self.support_tab, "Support")
         sup_v = QVBoxLayout(self.support_tab)
 
+        # Ko-fi Button
+        # kofi_btn = QPushButton("Support on Ko-fi")
+        # kofi_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        # kofi_btn.clicked.connect(lambda: openLink("https://ko-fi.com/D1D01W6NQT"))
+        # kofi_btn.setStyleSheet("background-color: #29abe0; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
+        # sup_v.addWidget(kofi_btn)
+
+        # Ko-fi Widget (Embedded Script)
+        self.support_webview = AnkiWebView(self.support_tab)
+        self.support_webview.setFixedHeight(40)  # Enough for the widget button if not floating, but here it's floating
+        # For a floating widget, we need the script in a page. 
+        # The widget itself is fixed/absolute positioned by the script.
+        kofi_html = f"""
+        <html>
+        <head>
+        <style>
+          body {{ background-color: transparent; margin: 0; padding: 0; overflow: hidden; }}
+        </style>
+        <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script>
+        <script type='text/javascript'>
+          kofiwidget2.init('Support me on Ko-fi', '#72a4f2', 'D1D01W6NQT');
+          kofiwidget2.draw();
+        </script>
+        </head>
+        <body></body>
+        </html>
+        """
+        self.support_webview.setHtml(kofi_html)
+        sup_v.addWidget(self.support_webview)
+        
         scroll = QScrollArea(self.support_tab)
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)

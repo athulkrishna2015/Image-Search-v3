@@ -61,6 +61,12 @@ If the "Search image for..." option does not appear when you right-click on sele
 
 You can diagnose this by temporarily disabling other editor-related add-ons (like "Image Editor") via **Tools -> Add-ons**, restarting Anki, and checking if the menu item appears.
 
+## Support
+
+If you find this add-on useful, please consider supporting its development:
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/D1D01W6NQT)
+
 ## Update (2026-03-17)
 
 - Added a DuckDuckGo (hidden API) provider option alongside Yandex (default) and Google.
