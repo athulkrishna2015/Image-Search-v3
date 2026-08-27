@@ -8,6 +8,7 @@ import subprocess
 
 from aqt.qt import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QFileDialog,
     QHBoxLayout,
@@ -25,6 +26,7 @@ from ._base import TabPage
 
 
 _LEVELS = [
+    ("All (very verbose)", "all"),
     ("Debug (verbose)", "debug"),
     ("Info (default)", "info"),
     ("Warning", "warning"),
@@ -32,12 +34,16 @@ _LEVELS = [
     ("Critical", "critical"),
 ]
 
+_DEBUG_KEY = "log_debug"
+
 
 class LogsTab(TabPage):
     title = "Logs"
 
     def __init__(self, config: dict, on_dirty, parent=None):
         super().__init__(config, on_dirty, parent)
+        self._loaded = False
+        self._loading = False
 
         # Path row
         path_row = QHBoxLayout()
@@ -49,6 +55,18 @@ class LogsTab(TabPage):
         )
         path_row.addWidget(self.path_label, 1)
         self.body.addLayout(path_row)
+
+        # Quick toggle: enable maximum logging without picking a level.
+        self.debug_chk = QCheckBox(
+            "Log debug (maximum verbosity, off by default)", self
+        )
+        self.debug_chk.setToolTip(
+            "When on, the add-on logs at the 'all' level (everything). "
+            "The log file is rotated at 512 KiB so disk usage stays bounded."
+        )
+        self.debug_chk.setChecked(bool(self.config.get(_DEBUG_KEY, False)))
+        self.debug_chk.toggled.connect(self._on_debug_toggled)
+        self.body.addWidget(self.debug_chk)
 
         # Log level row
         level_row = QHBoxLayout()
@@ -66,11 +84,15 @@ class LogsTab(TabPage):
         level_row.addStretch()
         self.body.addLayout(level_row)
 
-        # Log text area
+        # Log text area. Placeholder text is shown until the user actually
+        # asks to load it; this keeps dialog open instant even for large
+        # rotated logs.
         self.text = QPlainTextEdit(self)
         self.text.setReadOnly(True)
         self.text.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
-        self.text.setPlaceholderText("(log file is empty)")
+        self.text.setPlaceholderText(
+            "(click Refresh to load the log; logs are not loaded automatically)"
+        )
         self.body.addWidget(self.text, 1)
 
         # Buttons row
@@ -99,25 +121,66 @@ class LogsTab(TabPage):
 
         # Help
         help_label = QLabel(
-            "Logs are kept for debugging. Levels above 'Info' are recommended "
-            "for normal use; switch to 'Debug' when reporting an issue."
+            "Logs are rotated at 512 KiB x 3. The log viewer is lazy: nothing "
+            "is read from disk until you click Refresh. To capture a bug, "
+            "tick 'Log debug' and reproduce the issue, then Refresh."
         )
         help_label.setWordWrap(True)
         help_label.setStyleSheet("color: #666;")
         self.body.addWidget(help_label)
 
-        self._refresh_text()
+    # ---- public API used by the dialog ----
+    def load_if_needed(self):
+        """Called by the dialog the first time this tab is shown."""
+        if self._loaded or self._loading:
+            return
+        self._loading = True
+        try:
+            self._refresh_text()
+        finally:
+            self._loading = False
+        self._loaded = True
 
+    # ---- internals ----
     def _safe_display_path(self) -> str:
         return log.log_path()
 
     def _on_level_changed(self, *_):
         value = self.level_combo.currentData()
-        if value:
-            log.set_level(value)
-            self.config["log_level"] = value
-            self.mark_dirty()
-            log.info("log level set to %s", value)
+        if not value:
+            return
+        log.set_level(value)
+        self.config["log_level"] = value
+        # If the user manually changes the level, the "log debug" toggle
+        # becomes a representation of "is level <= debug?"; uncheck it
+        # if they pick a less verbose level.
+        is_verbose = value in ("all", "debug")
+        if self.debug_chk.isChecked() != is_verbose:
+            self.debug_chk.blockSignals(True)
+            self.debug_chk.setChecked(is_verbose)
+            self.debug_chk.blockSignals(False)
+        self.config[_DEBUG_KEY] = is_verbose
+        self.mark_dirty()
+        log.info("log level set to %s", value)
+
+    def _on_debug_toggled(self, checked: bool):
+        if checked:
+            target = "all"
+        else:
+            # Restore the previously configured level (or the current logger
+            # level if no preference is set).
+            target = (self.config.get("log_level") or "info")
+        log.set_level(target)
+        self.config[_DEBUG_KEY] = checked
+        # Sync the combo without re-emitting the change handler.
+        for i in range(self.level_combo.count()):
+            if self.level_combo.itemData(i) == target:
+                self.level_combo.blockSignals(True)
+                self.level_combo.setCurrentIndex(i)
+                self.level_combo.blockSignals(False)
+                break
+        self.mark_dirty()
+        log.info("log debug toggle: %s -> level=%s", checked, target)
 
     def _refresh_text(self):
         self.text.setPlainText(log.tail_text())

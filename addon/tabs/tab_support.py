@@ -136,12 +136,28 @@ class SupportTabMixin:
         return self.support_tab
 
     def load_supporter_state(self):
-        meta = mw.addonManager.addonMeta(ADDON_PACKAGE)
+        try:
+            meta = mw.addonManager.addonMeta(ADDON_PACKAGE)
+        except Exception:
+            meta = {}
         self.supporter_check.blockSignals(True)
-        self.supporter_check.setChecked(meta.get("supporter_opt_out", False))
+        self.supporter_check.setChecked(bool(meta.get("supporter_opt_out", False)))
         self.supporter_check.blockSignals(False)
 
     def on_supporter_check_toggled(self, checked):
-        meta = mw.addonManager.addonMeta(ADDON_PACKAGE)
-        meta["supporter_opt_out"] = checked
-        mw.addonManager.writeAddonMeta(ADDON_PACKAGE, meta)
+        try:
+            meta = mw.addonManager.addonMeta(ADDON_PACKAGE) or {}
+        except Exception:
+            meta = {}
+        meta["supporter_opt_out"] = bool(checked)
+        try:
+            mw.addonManager.writeAddonMeta(ADDON_PACKAGE, meta)
+        except Exception as exc:
+            # The supporter opt-out is non-critical state. Failing to persist
+            # it (e.g. when the add-on folder is symlinked under a different
+            # name than the package id) should not crash the settings dialog.
+            try:
+                from ..logger import log
+                log.warning("supporter opt-out not persisted: %r", exc)
+            except Exception:
+                pass

@@ -75,16 +75,24 @@ class SettingsDialog(QDialog, SupportTabMixin):
     def _build_tabs(self):
         self.nt_tab = NoteTypesTab(self.config, on_dirty=self._mark_dirty, parent=self)
         self.net_tab = NetworkTab(self.config, on_dirty=self._mark_dirty, parent=self)
-        self.log_tab = LogsTab(self.config, on_dirty=self._mark_dirty, parent=self)
         # Support tab is built by the mixin; it uses mw.addonManager.addonMeta
         # so the supporter-opt-out checkbox is wired in.
         self.support_tab = self._create_support_tab()
+        # Logs is the LAST tab on purpose. The log viewer is lazy (no disk
+        # read until Refresh is clicked) so it does not slow dialog open.
+        self.log_tab = LogsTab(self.config, on_dirty=self._mark_dirty, parent=self)
 
         self.tabs.addTab(self.nt_tab, self.nt_tab.title)
         self.tabs.addTab(self.net_tab, self.net_tab.title)
-        self.tabs.addTab(self.log_tab, self.log_tab.title)
         self.tabs.addTab(self.support_tab, "Support")
+        self.tabs.addTab(self.log_tab, self.log_tab.title)
         self.tabs.setCurrentWidget(self.nt_tab)
+        # Lazy-load the log when the user actually focuses the Logs tab.
+        self.tabs.currentChanged.connect(self._on_tab_changed)
+
+    def _on_tab_changed(self, index: int):
+        if self.tabs.widget(index) is self.log_tab:
+            self.log_tab.load_if_needed()
 
     def _maybe_focus_support_tab(self):
         """

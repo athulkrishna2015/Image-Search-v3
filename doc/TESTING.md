@@ -18,7 +18,11 @@ tests/
 │                                smart-replace, LRU touch-on-nav
 ├── test_logger.py            ← logger: level set/filter, file creation, clear,
 │                                tail truncation, missing file
-└── test_bump_and_update.py   ← bump.py: validate / increment / sync / read /
+├── test_log_all_and_supporter.py
+│                             ← logger 'all' level, below-DEBUG capture,
+│                                tail_text UnboundLocalError regression,
+│                                supporter opt-out defensive write
+├── test_bump_and_update.py   ← bump.py: validate / increment / sync / read /
                                  bump_version; update_check: should_show /
                                  mark_welcomed, opt-out, disabled, no-startup-
                                  side-effects (AST inspection)

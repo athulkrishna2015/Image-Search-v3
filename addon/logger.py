@@ -15,13 +15,17 @@ LOG_DIR = os.path.join(CURRENT_DIR, "logs")
 LOG_FILE = os.path.join(LOG_DIR, "image_search_v3.log")
 LOGGER_NAME = "image_search_v3"
 
+_ALL_LEVEL = -10  # lower than any stdlib level so 3rd-party noise is captured
 _LEVELS = {
+    "all": _ALL_LEVEL,
     "debug": logging.DEBUG,
     "info": logging.INFO,
     "warning": logging.WARNING,
     "error": logging.ERROR,
     "critical": logging.CRITICAL,
 }
+
+logging.addLevelName(_ALL_LEVEL, "ALL")
 
 _DEFAULT_LEVEL = "info"
 _DEFAULT_MAX_BYTES = 512 * 1024
@@ -126,9 +130,10 @@ class _AddonLogger:
             with open(LOG_FILE, "rb") as fh:
                 if size > max_bytes:
                     fh.seek(size - max_bytes)
-                    data = fh.read()
-                    return "\n...[truncated]...\n" + data.decode("utf-8", errors="replace")
-                return data.decode("utf-8", errors="replace")
+                data = fh.read()
+            if size > max_bytes:
+                return "\n...[truncated]...\n" + data.decode("utf-8", errors="replace")
+            return data.decode("utf-8", errors="replace")
         except Exception as exc:
             return f"<could not read log: {exc!r}>"
 

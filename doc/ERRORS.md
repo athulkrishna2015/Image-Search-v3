@@ -55,6 +55,7 @@ backups). Levels:
 
 | Level | Used for |
 | --- | --- |
+| `all` | Maximum verbosity. Captures every stdlib logging call, including sub-DEBUG levels emitted by third-party libraries. |
 | `debug` | Cache hits/misses, query resolution details, retry attempts, parsed-URL counts. |
 | `info` | Per-search start/end, downloaded file paths, configured provider. |
 | `warning` | Transient network failures, missing configured fields, retries that will be retried. |

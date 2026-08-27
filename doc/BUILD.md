@@ -80,22 +80,27 @@ The fastest way to iterate is to symlink `addon/` directly into
 Anki's add-ons folder so edits show up after restarting Anki (or
 "Reload" via **Tools → Add-ons**).
 
-**Linux:**
+**Important:** name the symlink after the **package id**
+(`178037783`), not after the project. Anki resolves
+`addonManager.addonMeta` and `writeAddonMeta` by package id, so a
+symlink named e.g. `image_search_v3_dev` causes those calls to look
+for `meta.json` in a separate `addons21/178037783/` folder that
+does not exist. The add-on catches that failure silently (see
+`SupportTabMixin.on_supporter_check_toggled`), but persistence of
+preferences like the supporter opt-out will not work.
+
+**Linux / macOS:**
 
 ```shell
-ln -s "$(pwd)/addon" "$HOME/.local/share/Anki2/addons21/image_search_v3_dev"
-```
-
-**macOS:**
-
-```shell
-ln -s "$(pwd)/addon" "$HOME/Library/Application Support/Anki2/addons21/image_search_v3_dev"
+ln -s "$(pwd)/addon" "$HOME/.local/share/Anki2/addons21/178037783"
 ```
 
 **Windows (Admin PowerShell):**
 
 ```powershell
-New-Item -ItemType SymbolicLink -Path "$env:APPDATA\Anki2\addons21\image_search_v3_dev" -Target "$pwd\addon"
+New-Item -ItemType SymbolicLink `
+    -Path "$env:APPDATA\Anki2\addons21\178037783" `
+    -Target "$pwd\addon"
 ```
 
 ## Code standards

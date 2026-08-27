@@ -36,7 +36,7 @@ touches the filesystem.
 | `_AddonLogger` | Thin wrapper around `logging.getLogger(...)` with `set_level` / `tail_text` / `clear`. |
 | `log` | Singleton instance used by all modules. |
 | `log.debug / info / warning / error / exception / critical` | Stdlib-style API. `error(..., exc_info=True)` includes the current traceback. |
-| `log.set_level(name)` | One of `debug` / `info` / `warning` / `error` / `critical`. Silently ignored for unknown values. |
+| `log.set_level(name)` | One of `all` / `debug` / `info` / `warning` / `error` / `critical`. Silently ignored for unknown values. `all` uses a negative numeric level so even third-party noise is captured. |
 | `log.get_level()` | Current level name. |
 | `log.tail_text(max_bytes=64 KiB)` | Last bytes of the current log for the Logs tab. |
 | `log.clear()` | Truncate current file and remove `.1`/`.2`/`.3` backups. |

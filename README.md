@@ -16,6 +16,7 @@ Image Search v3 is a powerful Anki add-on that lets you quickly find and add ima
 - **Right-Click Context Menu**: Right-click on highlighted text to instantly start an image search. 
 - **Support Tab with Supporter Opt-out**: A dedicated Support tab with Ko-fi, UPI, BTC, and ETH addresses, and an "I have supported this addon" checkbox that hides the automatic post-update welcome.
 - **Update Welcome**: When the add-on is updated, the Support tab opens automatically the next time you open the settings dialog (no startup cost — the check runs only on dialog open). The opt-out checkbox in the Support tab turns this off.
+- **Built-in Log Viewer**: The Logs tab shows a rotating log file (512 KiB × 3). Lazy-loaded — nothing is read from disk until you click Refresh. A "Log debug" checkbox toggles maximum verbosity on/off without picking a level from the dropdown; the "All" level captures even sub-DEBUG noise from third-party libraries.
 
 ## Usage
 

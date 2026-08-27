@@ -23,7 +23,8 @@ shape.
 | `request_timeout_s` | float | `10.0` | Per-request timeout in seconds. Clamped to `[1.0, 120.0]`. |
 | `max_retries` | int | `5` | Number of retries after the first attempt (i.e. up to `max_retries+1` total requests). Clamped to `[0, 10]`. |
 | `backoff_base_s` | float | `0.75` | Exponential backoff base in seconds. Sleep before retry `n` is `backoff_base_s * 2 ** n`. Clamped to `[0.05, 10.0]`. |
-| `log_level` | string | `"info"` | One of `"debug"`, `"info"`, `"warning"`, `"error"`, `"critical"`. Controlled from the Logs tab. Unknown values are ignored. |
+| `log_level` | string | `"info"` | One of `"all"`, `"debug"`, `"info"`, `"warning"`, `"error"`, `"critical"`. Controlled from the Logs tab. Unknown values are ignored. `"all"` uses a negative numeric level so even third-party log noise is captured. |
+| `log_debug` | bool | `false` | Convenience toggle in the Logs tab: when on, sets the level to `"all"`; when off, restores the level from `log_level` (default `"info"`). |
 | `auto_show_support_on_update` | bool | `true` | When the add-on is updated, the Support tab opens automatically the next time the user opens the settings dialog. Disabled by ticking **"I have supported this addon"** in the Support tab (which is stored separately in `meta.json`). |
 | `configs_by_notetype_id` | object | `{}` | Map of note-type id (as string) → per-note-type config (see below). |
 
