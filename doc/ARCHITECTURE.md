@@ -43,15 +43,17 @@ and three different image search providers.
                 ┌───────────────────────────────────────┐
                 │  Tools → Image Search v3 Settings     │
                 │             (ui_menu.py)               │
-                │   • Note Types tab (per model)         │
-                │   • Network tab   (provider, retries)  │
-                │   • Support tab   (Ko-fi, QR codes)    │
-                └────────────────────┬──────────────────┘
-                                     │ writes to
-                                     ▼
-                          addon/meta.json (Anki-managed,
-                          not in git) and addon/config.json
-                          (defaults shipped with the add-on)
+                │   ┌────────────────────────────────┐  │
+                │   │ Note Types │ Network │ Logs │   │  │
+                │   │            │         │       │   │  │
+                │   │            │         │  Support   │  │
+                │   └────────────────────────────────┘  │
+                │   (each tab = addon/tabs/<name>_tab.py)│
+                │   writes to addon/meta.json (Anki-    │
+                │   managed, gitignored) and            │
+                │   addon/config.json (defaults)        │
+                │   also logs to addon/logs/*.log       │
+                └───────────────────────────────────────┘
 ```
 
 ## Lifecycle

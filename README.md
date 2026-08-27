@@ -50,7 +50,8 @@ There are three ways to search for an image in the card editor:
 
  If you don't know how to get the API please read this: [google custom-search](https://programmablesearchengine.google.com/)
 
-Developer documentation lives in `GITHUB.md`.
+Developer documentation lives under [doc/](./doc/) (architecture, modules,
+JSON keys, errors, build, security, testing).
 
 
 ## Troubleshooting

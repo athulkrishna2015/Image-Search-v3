@@ -8,6 +8,26 @@ Entry point. Defines `setup()` and runs it on import. Imports
 `ui_editor` and `ui_menu` lazily inside `setup()` to avoid
 circular-import issues during Anki's add-on reload cycle.
 
+## `addon/logger.py`
+
+Rotating file logger. The handler is attached lazily on first use so
+importing the add-on outside Anki (tests, build scripts) never
+touches the filesystem.
+
+| Symbol | Purpose |
+| --- | --- |
+| `LOG_DIR` | `addon/logs/` (excluded from the .ankiaddon). |
+| `LOG_FILE` | `addon/logs/image_search_v3.log`. |
+| `LOGGER_NAME` | `"image_search_v3"`. |
+| `_AddonLogger` | Thin wrapper around `logging.getLogger(...)` with `set_level` / `tail_text` / `clear`. |
+| `log` | Singleton instance used by all modules. |
+| `log.debug / info / warning / error / exception / critical` | Stdlib-style API. `error(..., exc_info=True)` includes the current traceback. |
+| `log.set_level(name)` | One of `debug` / `info` / `warning` / `error` / `critical`. Silently ignored for unknown values. |
+| `log.get_level()` | Current level name. |
+| `log.tail_text(max_bytes=64 KiB)` | Last bytes of the current log for the Logs tab. |
+| `log.clear()` | Truncate current file and remove `.1`/`.2`/`.3` backups. |
+| `log.log_path()` / `log.log_dir()` | Absolute paths used by the Logs tab. |
+
 ## `addon/utils.py`
 
 Shared helpers. **No Qt imports at module scope** so the file is
@@ -130,18 +150,32 @@ All editor-side UI: toolbar buttons, context menu, the
 
 ## `addon/ui_menu.py`
 
-Tools menu entry and the per-note-type settings dialog.
+Tools menu entry and the settings dialog shell. The dialog itself
+is split into one file per tab under `addon/tabs/`.
 
 | Symbol | Purpose |
 | --- | --- |
-| `SettingsDialog` | The QDialog with three tabs. |
-| `SettingsDialog.__init__` | Builds the UI from `utils.get_config()`. |
-| `SettingsDialog.on_note_type_selected` | Warn on unsaved changes when switching; load new model. |
-| `SettingsDialog.load_note_type_config` | Populate the right-hand widgets for a model. |
-| `SettingsDialog.save_note_type_config` | Write to the in-memory `self.config` (no disk yet). |
-| `SettingsDialog.reset_nt_to_default` | Reset to defaults. |
-| `SettingsDialog.reset_net_to_default` | Reset the Network tab. |
-| `SettingsDialog.save_only` | Persist via `mw.addonManager.writeConfig`. |
-| `SettingsDialog.save_and_close` | `save_only` + `accept()`. |
+| `SettingsDialog` | `QDialog` that owns the four tab widgets and a status label. |
+| `SettingsDialog._save_only` | Pulls state from every tab into `self.config`, strips legacy keys, writes via `addonManager.writeConfig`. |
+| `SettingsDialog._save_and_close` | Save + `accept()`. |
 | `settings_dialog()` | Construct + `exec()`. |
 | `init_menu()` | Idempotent: add the Tools entry. |
+
+## `addon/tabs/`
+
+Each tab is a `QWidget` subclass built on `TabPage` (see `_base.py`)
+that exposes a small contract for the dialog:
+
+- accepts `(config, on_dirty, parent=...)` in `__init__`,
+- calls `self.mark_dirty()` whenever the user changes a setting,
+- provides either a `collect()` method returning a dict to merge
+  into the config, or `save_current()` writing directly into the
+  shared `config` dict.
+
+| File | Class | Owns |
+| --- | --- | --- |
+| `_base.py` | `TabPage` | Layout convenience, dirty callback wiring. |
+| `nt_tab.py` | `NoteTypesTab` | Note-type list, query fields, image field, image placement. |
+| `net_tab.py` | `NetworkTab` | Provider dropdown, Google credentials, timeout / retries / backoff. |
+| `log_tab.py` | `LogsTab` | Log file path, level selector, text viewer, Refresh / Clear / Copy / Open folder / Export. |
+| `support_tab.py` | `SupportTab` | Ko-fi widget, UPI / BTC / ETH QR codes with copy buttons. |

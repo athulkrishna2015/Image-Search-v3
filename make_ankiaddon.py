@@ -36,8 +36,8 @@ def create_ankiaddon():
     final_name = f"{ADDON_SLUG}_{version}.ankiaddon"
 
     # Exclusions
-    exclude_dirs = {"__pycache__", ".git", ".vscode", ".github", "tests"}
-    exclude_exts = {".ankiaddon", ".pyc"}
+    exclude_dirs = {"__pycache__", ".git", ".vscode", ".github", "tests", "logs"}
+    exclude_exts = {".ankiaddon", ".pyc", ".log"}
     exclude_files = {"meta.json", ".gitignore", ".gitmodules", "mypy.ini"}
 
     print(f"Creating {final_name} from {ADDON_DIR}...")

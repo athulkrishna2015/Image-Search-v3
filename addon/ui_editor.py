@@ -5,6 +5,7 @@ from aqt import mw
 from anki.hooks import addHook
 from . import utils
 from . import search
+from .logger import log
 
 try:
     from aqt import gui_hooks
@@ -90,10 +91,12 @@ def on_search(editor):
         return
 
     _set_last_query(editor, query)
+    log.info("on_search: query=%r", query)
     image_url = search.getresultbyquery(query)
     provider_label = search.get_provider_label(query)
     utils.notify(f"Provider: {provider_label}")
     if not image_url:
+        log.info("on_search: no results for %r (provider=%s)", query, provider_label)
         utils.report(f"No images found for the query (provider: {provider_label}).")
         return
 
@@ -115,6 +118,7 @@ def on_previous(editor):
     if not last:
         utils.report("No image search yet in this editor. Press the search button first.")
         return
+    log.debug("on_previous: query=%r", last)
     url = search.getprevresultbyquery(last)
     if not url:
         utils.report("No previous image available for this query.")
@@ -135,6 +139,7 @@ def on_next(editor):
     if not last:
         utils.report("No image search yet in this editor. Press the search button first.")
         return
+    log.debug("on_next: query=%r", last)
     url = search.getnextresultbyquery(last)
     if not url:
         utils.report("No next image available for this query.")
@@ -227,3 +232,13 @@ def init_editor():
     _HOOKS_INSTALLED = True
     if mw:
         setattr(mw, _MW_HOOK_FLAG, True)
+    # Apply log level from config (so a user setting takes effect immediately
+    # after they change it in the Logs tab and reopen the editor).
+    try:
+        cfg = utils.get_config() or {}
+        level = cfg.get("log_level")
+        if level:
+            log.set_level(level)
+    except Exception:
+        pass
+    log.info("init_editor: hooks installed")

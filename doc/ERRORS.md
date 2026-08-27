@@ -49,16 +49,26 @@ show.
 ## Internal log lines (developer-facing)
 
 The add-on uses `aqt.utils.tooltip` and `aqt.utils.showWarning` for
-the user. For developer visibility, the only `print` / `report`
-extras are:
+the user. For developer visibility, every call path also writes to
+`addon/logs/image_search_v3.log` (a rotating file, 512 KiB × 3
+backups). Levels:
+
+| Level | Used for |
+| --- | --- |
+| `debug` | Cache hits/misses, query resolution details, retry attempts, parsed-URL counts. |
+| `info` | Per-search start/end, downloaded file paths, configured provider. |
+| `warning` | Transient network failures, missing configured fields, retries that will be retried. |
+| `error` | Unexpected exceptions (always with traceback). |
+
+The level can be changed at runtime in the Logs tab
+(`Tools → Image Search v3 Settings → Logs`); the new level takes
+effect on the next editor open. There is no structured logging; if
+you need to debug a network issue, set the level to `Debug` and
+inspect the file in the same tab ("Open folder" or "Export…").
+
+The only `print` fallbacks are:
 
 - `utils.report(...)` falls back to `print(text)` if `showWarning`
   cannot be imported (e.g. outside Anki).
 - `utils.notify(...)` falls back to `print(text)` if neither
   `tooltip` nor `showInfo` can be imported.
-- Unexpected exceptions during download are reported with the full
-  traceback via `utils.report(...)`.
-
-There is no structured logging. If you need to debug a network issue,
-add `print(url, status)` in `utils._download_bytes` and inspect the
-Anki console.

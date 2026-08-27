@@ -55,3 +55,38 @@ on Linux).
 
 The release asset **must** be the `.ankiaddon` produced by
 `make_ankiaddon.py` — AnkiWeb's "Update" button fetches that asset.
+
+## Local development (symlink)
+
+The fastest way to iterate is to symlink `addon/` directly into
+Anki's add-ons folder so edits show up after restarting Anki (or
+"Reload" via **Tools → Add-ons**).
+
+**Linux:**
+
+```shell
+ln -s "$(pwd)/addon" "$HOME/.local/share/Anki2/addons21/image_search_v3_dev"
+```
+
+**macOS:**
+
+```shell
+ln -s "$(pwd)/addon" "$HOME/Library/Application Support/Anki2/addons21/image_search_v3_dev"
+```
+
+**Windows (Admin PowerShell):**
+
+```powershell
+New-Item -ItemType SymbolicLink -Path "$env:APPDATA\Anki2\addons21\image_search_v3_dev" -Target "$pwd\addon"
+```
+
+## Code standards
+
+- Keep modules import-safe outside Anki (no `aqt.qt` imports at
+  module level in `utils`, `search`, `logger`, `yimages`, `gimages`,
+  `ddg_hidden_test`).
+- One widget per file under `tabs/`; the dialog in `ui_menu.py` is a
+  thin shell that wires the tabs together.
+- Always log user-visible actions (`log.info` / `log.warning`) and
+  pass `exc_info=True` on error paths.
+- Run `python3 -m unittest discover -s tests` before committing.

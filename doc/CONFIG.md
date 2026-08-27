@@ -23,6 +23,7 @@ shape.
 | `request_timeout_s` | float | `10.0` | Per-request timeout in seconds. Clamped to `[1.0, 120.0]`. |
 | `max_retries` | int | `5` | Number of retries after the first attempt (i.e. up to `max_retries+1` total requests). Clamped to `[0, 10]`. |
 | `backoff_base_s` | float | `0.75` | Exponential backoff base in seconds. Sleep before retry `n` is `backoff_base_s * 2 ** n`. Clamped to `[0.05, 10.0]`. |
+| `log_level` | string | `"info"` | One of `"debug"`, `"info"`, `"warning"`, `"error"`, `"critical"`. Controlled from the Logs tab. Unknown values are ignored. |
 | `configs_by_notetype_id` | object | `{}` | Map of note-type id (as string) → per-note-type config (see below). |
 
 ### Legacy keys (ignored at runtime, cleaned on save)

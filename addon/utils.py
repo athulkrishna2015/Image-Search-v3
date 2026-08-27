@@ -14,6 +14,8 @@ from tempfile import mkstemp
 
 from aqt import mw
 
+from .logger import log
+
 CURRENT_DIR = dirname(abspath(realpath(__file__)))
 
 _NET_CHECK_HOSTS = ("yandex.ru", "google.com", "1.1.1.1")
@@ -104,7 +106,11 @@ def path_to(*args):
 
 
 def get_config():
-    return mw.addonManager.getConfig(__name__)
+    try:
+        return mw.addonManager.getConfig(__name__)
+    except Exception as exc:
+        log.error("get_config failed: %r", exc)
+        return None
 
 
 def report(text: str, *, key: tuple | None = None, title: str = "Image Search v3"):
@@ -151,8 +157,10 @@ def get_note_query(note):
     then global config, with Cloze‑aware and case‑insensitive matching.
     """
     field_names = mw.col.models.fieldNames(note.model())
-    config = get_config()
+    config = get_config() or {}
     nt_id = str(note.model()["id"])
+
+    log.debug("get_note_query: note_type_id=%s fields=%s", nt_id, field_names)
 
     # 1) Collect preferred query fields (per-notetype, then global)
     query_fields = []
@@ -214,7 +222,7 @@ def get_note_query(note):
 
 def get_note_image_field_index(note):
     field_names = mw.col.models.fieldNames(note.model())
-    config = get_config()
+    config = get_config() or {}
     nt_id = str(note.model()["id"])
 
     image_field = None
@@ -226,9 +234,11 @@ def get_note_image_field_index(note):
 
     if image_field:
         try:
-            return field_names.index(image_field)
+            idx = field_names.index(image_field)
+            log.debug("get_note_image_field_index: nt=%s field=%s idx=%s", nt_id, image_field, idx)
+            return idx
         except ValueError:
-            nt_id = str(note.model()["id"])
+            log.warning("get_note_image_field_index: configured field %r not in %s", image_field, field_names)
             if field_names:
                 report(
                     f"Could not find the configured image field ('{image_field}') in "
@@ -261,6 +271,7 @@ def _network_available() -> bool:
                 return True
             except Exception:
                 continue
+        log.warning("network_available: all probe hosts failed: %s", _NET_CHECK_HOSTS)
         return False
     finally:
         try:
@@ -301,9 +312,15 @@ def _download_bytes(image_url: str, timeout_s: float = 10.0, max_retries: int = 
     for attempt in range(max_retries + 1):
         try:
             with urllib.request.urlopen(req, timeout=timeout_s) as response:
-                return response.read()
+                data = response.read()
+                log.debug("_download_bytes: ok url=%s bytes=%s attempt=%s", image_url, len(data), attempt)
+                return data
         except (urllib.error.URLError, socket.timeout) as exc:
             last_exc = exc
+            log.warning(
+                "_download_bytes: transient failure url=%s attempt=%s/%s err=%r",
+                image_url, attempt, max_retries, exc,
+            )
             if attempt < max_retries:
                 time.sleep(backoff_base_s * (2 ** attempt))
                 continue
@@ -335,10 +352,15 @@ def save_file_to_library(editor, image_url, prefix, suffix):
     - 'unexpected' (any other exception)
     """
     if not _network_available():
+        log.info("save_file_to_library: offline, skipping %s", image_url)
         return None, "offline"
 
     timeout_s, max_retries, backoff_base_s = get_net_settings()
     safe_prefix = _safe_prefix(prefix)
+    log.debug(
+        "save_file_to_library: url=%s prefix=%s suffix=%s timeout=%.1fs retries=%d",
+        image_url, safe_prefix, suffix, timeout_s, max_retries,
+    )
 
     temp_path = None
     i_file = None
@@ -357,12 +379,15 @@ def save_file_to_library(editor, image_url, prefix, suffix):
             i_file = None
 
         result_filename = _add_file_safely(editor, temp_path)
+        log.info("save_file_to_library: saved url=%s -> %s", image_url, result_filename)
         return result_filename, None
 
-    except (urllib.error.URLError, urllib.error.HTTPError, socket.timeout):
+    except (urllib.error.URLError, urllib.error.HTTPError, socket.timeout) as exc:
+        log.warning("save_file_to_library: network error url=%s err=%r", image_url, exc)
         return None, "network"
 
     except Exception as e:
+        log.error("save_file_to_library: unexpected url=%s err=%r", image_url, e)
         report(f"Unexpected error while saving image\n\n{repr(e)}\n\n{image_url}")
         return None, "unexpected"
     finally:

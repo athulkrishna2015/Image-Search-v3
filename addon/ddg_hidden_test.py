@@ -6,6 +6,7 @@ import re
 import time
 import requests
 
+from .logger import log
 from .utils import get_net_settings
 
 # DuckDuckGo image search via the hidden i.js endpoint.
@@ -34,11 +35,13 @@ def _request_with_retry(url, params, timeout_s, max_retries, backoff_base_s):
             resp.raise_for_status()
             return resp
         except requests.exceptions.Timeout:
+            log.warning("ddg: timeout url=%s attempt=%d/%d", url, attempt, max_retries)
             if attempt < max_retries:
                 time.sleep(backoff_base_s * (2 ** attempt))
                 continue
             return None
-        except requests.exceptions.RequestException:
+        except requests.exceptions.RequestException as exc:
+            log.warning("ddg: request failed url=%s err=%r", url, exc)
             return None
     return None
 
@@ -68,6 +71,7 @@ def get_ddg_images(query: str) -> list[str]:
     timeout_s, max_retries, backoff_base_s = get_net_settings()
     vqd = _get_vqd(query, timeout_s, max_retries, backoff_base_s)
     if not vqd:
+        log.info("ddg: no vqd for %r; giving up", query)
         return []
 
     resp = _request_with_retry(
@@ -87,6 +91,7 @@ def get_ddg_images(query: str) -> list[str]:
     try:
         data = resp.json()
     except Exception:
+        log.warning("ddg: invalid JSON for %r", query)
         return []
 
     results = data.get("results") if isinstance(data, dict) else None
@@ -100,6 +105,7 @@ def get_ddg_images(query: str) -> list[str]:
         url = item.get("image")
         if url:
             urls.append(url)
+    log.info("ddg: ok query=%r count=%d", query, len(urls))
     return urls
 
 

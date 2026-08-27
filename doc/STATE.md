@@ -5,6 +5,19 @@ and is not part of the Anki collection. The principle is: **keep
 state local to the editor window when possible, share when there
 is only one logical instance.**
 
+## `addon/logger.py`
+
+| Name | Type | Scope | Lifetime | Notes |
+| --- | --- | --- | --- | --- |
+| `LOG_DIR` | `str` | process | constant | `<addon>/logs/` (excluded from .ankiaddon, gitignored). |
+| `LOG_FILE` | `str` | process | constant | `<addon>/logs/image_search_v3.log`. |
+| `LOGGER_NAME` | `str` | process | constant | `"image_search_v3"`. |
+| `_DEFAULT_MAX_BYTES` | `int` | process | constant | 512 KiB. |
+| `_DEFAULT_BACKUP_COUNT` | `int` | process | constant | 3 (`image_search_v3.log.1` / `.2` / `.3`). |
+| `_AddonLogger._logger` | `logging.Logger` | process | add-on import | stdlib logger; lazily attaches a `RotatingFileHandler` on first call. |
+| `_AddonLogger._handler` | `RotatingFileHandler` or `None` | process | until add-on reload | Attached on first call. |
+| `_AddonLogger._current_level_name` | `str` | process | until add-on reload | Mirrors the in-memory level; updated by `set_level`. |
+
 ## `addon/utils.py`
 
 | Name | Type | Scope | Lifetime | Notes |

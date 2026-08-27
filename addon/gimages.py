@@ -3,6 +3,7 @@
 import time
 import requests
 
+from .logger import log
 from .utils import get_net_settings
 
 
@@ -21,6 +22,7 @@ def getgimages(query: str):
     """
     api_key, cx = _get_google_creds()
     if not api_key or not cx:
+        log.info("gimages: missing credentials (have_key=%s, have_cx=%s); returning []", bool(api_key), bool(cx))
         return []
 
     timeout_s, max_retries, backoff_base_s = get_net_settings()
@@ -33,6 +35,7 @@ def getgimages(query: str):
         "safe": "active",
         "num": 10,  # API limit per request
     }
+    log.debug("gimages: request query=%r timeout=%.1fs retries=%d", query, timeout_s, max_retries)
 
     for attempt in range(max_retries + 1):
         try:
@@ -40,14 +43,16 @@ def getgimages(query: str):
             r.raise_for_status()
             data = r.json()
             items = data.get("items") or []
-            return [it.get("link") for it in items if it.get("link")]
+            urls = [it.get("link") for it in items if it.get("link")]
+            log.info("gimages: ok query=%r count=%d", query, len(urls))
+            return urls
         except requests.exceptions.Timeout:
-            # backoff and retry
+            log.warning("gimages: timeout query=%r attempt=%d/%d", query, attempt, max_retries)
             if attempt < max_retries:
                 time.sleep(backoff_base_s * (2 ** attempt))
                 continue
             return []
-        except Exception:
-            # quota errors, bad key/cx, etc.
+        except Exception as exc:
+            log.warning("gimages: giving up query=%r err=%r", query, exc)
             return []
     return []

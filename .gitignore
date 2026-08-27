@@ -5,6 +5,10 @@ meta.json.bak
 Meta.json
 META.json
 
+# Runtime log directory
+addon/logs/
+*.log
+
 # Build artifacts
 *.ankiaddon
 addon.zip

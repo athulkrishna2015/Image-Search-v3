@@ -5,6 +5,7 @@ import requests
 import urllib.parse
 from aqt import mw
 
+from .logger import log
 from .utils import get_net_settings
 
 # No UI or dialogs here; let the caller decide how/when to notify.
@@ -34,14 +35,17 @@ def get_yimages_response(query: str):
     """
     timeout_s, max_retries, backoff_base_s = get_net_settings()
     url = make_yimages_url(query)
+    log.debug("yimages: request query=%r timeout=%.1fs retries=%d", query, timeout_s, max_retries)
 
     for attempt in range(max_retries + 1):
         try:
             r = requests.get(url, headers=headers, timeout=timeout_s)
             r.raise_for_status()
-            return r.json()
+            data = r.json()
+            log.info("yimages: ok query=%r status=%s bytes=%s", query, r.status_code, len(r.content))
+            return data
         except requests.exceptions.Timeout:
-            # retry on timeout with exponential backoff
+            log.warning("yimages: timeout query=%r attempt=%d/%d", query, attempt, max_retries)
             if attempt < max_retries:
                 time.sleep(backoff_base_s * (2 ** attempt))
                 continue
@@ -50,8 +54,8 @@ def get_yimages_response(query: str):
             requests.exceptions.ConnectionError,
             requests.exceptions.RequestException,
             ValueError,
-        ):
-            # Connection/HTTP error or invalid JSON → give up
+        ) as exc:
+            log.warning("yimages: giving up query=%r err=%r", query, exc)
             return None
 
     return None
@@ -101,4 +105,6 @@ def parse_yimages_response(response):
 
 def get_yimages(query: str):
     response = get_yimages_response(query)
-    return parse_yimages_response(response)
+    urls = parse_yimages_response(response)
+    log.debug("yimages: parsed query=%r urls=%d", query, len(urls))
+    return urls

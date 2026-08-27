@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from anki.utils import strip_html_media
 from . import utils
+from .logger import log
 
 # Yandex provider: support either export name
 try:
@@ -79,24 +80,27 @@ def _provider_results_and_label(q: str) -> tuple[list[str], str]:
     cfg = utils.get_config() or {}
     provider = (cfg.get("provider") or "yandex").lower()
     fallback_on = bool(cfg.get("google_fallback_to_yandex", True))
+    log.debug("provider routing: provider=%s fallback=%s query=%r", provider, fallback_on, q)
 
     if provider in ("duckduckgo", "ddg"):
         if _get_ddg:
             urls = _get_ddg(q)
             if urls:
                 return urls, "DuckDuckGo"
-        # Fallback to Yandex when DDG is empty/unavailable
+        log.info("DDG provider unavailable or empty; falling back to Yandex for %r", q)
         return _get_yandex(q), "Yandex (fallback from DuckDuckGo)"
 
     if provider == "google":
         if not getgimages:
             if fallback_on:
+                log.info("Google provider not loaded; falling back to Yandex for %r", q)
                 return _get_yandex(q), "Yandex (fallback from Google)"
             return [], "Google"
         urls = getgimages(q)
         if urls:
             return urls, "Google"
         if fallback_on:
+            log.info("Google returned no results; falling back to Yandex for %r", q)
             return _get_yandex(q), "Yandex (fallback from Google)"
         return [], "Google"
 
@@ -110,11 +114,15 @@ def get_provider_label(query: str) -> str:
 
 def getresultbyquery(query: str) -> str | None:
     q = _clean_query(query)
+    log.debug("getresultbyquery: query=%r", q)
     if q not in RESULTS or not RESULTS[q]:
         urls, label = _provider_results_and_label(q)
         RESULTS[q] = urls
         INDICES[q] = 0 if urls else -1
         PROVIDERS[q] = label
+        log.info("cache miss: query=%r provider=%s count=%d", q, label, len(urls))
+    else:
+        log.debug("cache hit: query=%r count=%d", q, len(RESULTS[q]))
     _touch_query(q)
     _evict_cache_if_needed()
     return _current_url(q)
