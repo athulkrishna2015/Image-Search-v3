@@ -1,26 +1,40 @@
+from __future__ import annotations
+
 import os
 from aqt import mw
-from aqt.utils import qconnect, openLink
+from aqt.utils import qconnect
 from aqt.webview import AnkiWebView
-from aqt.qt import *
+from aqt.qt import (
+    QAction,
+    QApplication,
+    QAbstractItemView,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QDoubleSpinBox,
+    QFormLayout,
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QMessageBox,
+    QPixmap,
+    QPushButton,
+    QScrollArea,
+    QSpinBox,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+    Qt,
+)
 from . import utils
+from .utils import safe_float, safe_int
 
 _MENU_INSTALLED = False
 _MW_MENU_FLAG = "_imgsearchv3_menu_installed"
-
-
-def _safe_float(value, default):
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return float(default)
-
-
-def _safe_int(value, default):
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return int(default)
 
 
 class SettingsDialog(QDialog):
@@ -157,14 +171,14 @@ class SettingsDialog(QDialog):
         self.timeout_spin.setRange(1.0, 120.0)
         self.timeout_spin.setSingleStep(0.25)
         self.timeout_spin.setDecimals(2)
-        self.timeout_spin.setValue(_safe_float(self.config.get("request_timeout_s", 10.0), 10.0))
+        self.timeout_spin.setValue(safe_float(self.config.get("request_timeout_s", 10.0), 10.0))
         self.timeout_spin.valueChanged.connect(self.mark_net_dirty)
         net_form.addRow("Request timeout (s):", self.timeout_spin)
 
         # Max retries
         self.retries_spin = QSpinBox(net_group)
         self.retries_spin.setRange(0, 10)
-        self.retries_spin.setValue(_safe_int(self.config.get("max_retries", 5), 5))
+        self.retries_spin.setValue(safe_int(self.config.get("max_retries", 5), 5))
         self.retries_spin.valueChanged.connect(self.mark_net_dirty)
         net_form.addRow("Max retries:", self.retries_spin)
 
@@ -173,7 +187,7 @@ class SettingsDialog(QDialog):
         self.backoff_spin.setRange(0.05, 10.0)
         self.backoff_spin.setSingleStep(0.05)
         self.backoff_spin.setDecimals(2)
-        self.backoff_spin.setValue(_safe_float(self.config.get("backoff_base_s", 0.75), 0.75))
+        self.backoff_spin.setValue(safe_float(self.config.get("backoff_base_s", 0.75), 0.75))
         self.backoff_spin.valueChanged.connect(self.mark_net_dirty)
         net_form.addRow("Backoff base (s):", self.backoff_spin)
 
@@ -494,7 +508,7 @@ def init_menu():
     if not mw or not hasattr(mw, "form"):
         return
     for existing in mw.form.menuTools.actions():
-        if existing.objectName() == "imgsearchv3_settings_action" or existing.text() == "Image Search v3 Settings":
+        if existing.objectName() == "imgsearchv3_settings_action":
             _MENU_INSTALLED = True
             if mw:
                 setattr(mw, _MW_MENU_FLAG, True)

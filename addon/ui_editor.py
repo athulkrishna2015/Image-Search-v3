@@ -11,9 +11,20 @@ try:
 except Exception:
     gui_hooks = None
 
-last_query = None
 _HOOKS_INSTALLED = False
 _MW_HOOK_FLAG = "_imgsearchv3_editor_hooks_installed"
+_LAST_Q_ATTR = "_imgsearchv3_last_query"
+
+
+def _get_last_query(editor):
+    return getattr(editor, _LAST_Q_ATTR, None)
+
+
+def _set_last_query(editor, q):
+    try:
+        setattr(editor, _LAST_Q_ATTR, q)
+    except Exception:
+        pass
 
 
 def _replace_last_imgsearch_tag(html: str, new_img_tag: str):
@@ -34,21 +45,31 @@ def display_image(editor, img_filename, image_dest_field_index):
     placement = nt_config.get("image_placement", "replace")
 
     current = editor.note.fields[image_dest_field_index]
+    full_reload = True  # append/prepend need to refresh the field
+    new_value = current
 
     if placement == "append":
         sep = " " if current else ""
-        editor.note.fields[image_dest_field_index] = current + sep + img_tag
+        new_value = current + sep + img_tag
     elif placement == "prepend":
         sep = " " if current else ""
-        editor.note.fields[image_dest_field_index] = img_tag + sep + current
+        new_value = img_tag + sep + current
     else:
+        # Smart replace (in-place swap preserves editor focus, undo, and selection).
         if current and current.strip():
             replaced = _replace_last_imgsearch_tag(current, img_tag)
-            editor.note.fields[image_dest_field_index] = replaced or (current + (" " if current else "") + img_tag)
+            if replaced is not None:
+                new_value = replaced
+                full_reload = False
+            else:
+                new_value = current + (" " if current else "") + img_tag
         else:
-            editor.note.fields[image_dest_field_index] = img_tag
+            new_value = img_tag
 
-    editor.loadNote()
+    if new_value != current:
+        editor.note.fields[image_dest_field_index] = new_value
+    if full_reload:
+        editor.loadNote()
 
 
 def _show_download_error(code: str):
@@ -61,7 +82,6 @@ def _show_download_error(code: str):
 
 
 def on_search(editor):
-    global last_query
     query = editor.web.selectedText() if editor.web else ""
     if not query:
         query = utils.get_note_query(editor.note)
@@ -69,7 +89,7 @@ def on_search(editor):
         utils.report("No text selected and no query field content found.")
         return
 
-    last_query = query
+    _set_last_query(editor, query)
     image_url = search.getresultbyquery(query)
     provider_label = search.get_provider_label(query)
     utils.notify(f"Provider: {provider_label}")
@@ -91,11 +111,11 @@ def on_search(editor):
 
 
 def on_previous(editor):
-    global last_query
-    if not last_query:
-        utils.report("No previous image search in this session.")
+    last = _get_last_query(editor)
+    if not last:
+        utils.report("No image search yet in this editor. Press the search button first.")
         return
-    url = search.getprevresultbyquery(last_query)
+    url = search.getprevresultbyquery(last)
     if not url:
         utils.report("No previous image available for this query.")
         return
@@ -111,11 +131,11 @@ def on_previous(editor):
 
 
 def on_next(editor):
-    global last_query
-    if not last_query:
-        utils.report("No previous image search in this session.")
+    last = _get_last_query(editor)
+    if not last:
+        utils.report("No image search yet in this editor. Press the search button first.")
         return
-    url = search.getnextresultbyquery(last_query)
+    url = search.getnextresultbyquery(last)
     if not url:
         utils.report("No next image available for this query.")
         return

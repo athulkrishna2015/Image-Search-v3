@@ -1,9 +1,12 @@
 # ddg_hidden_test.py
 
+from __future__ import annotations
+
 import re
 import time
 import requests
-from aqt import mw
+
+from .utils import get_net_settings
 
 # DuckDuckGo image search via the hidden i.js endpoint.
 # This is undocumented and may change; keep it best-effort and quiet.
@@ -22,41 +25,6 @@ _HEADERS = {
     "Referer": "https://duckduckgo.com/",
     "Origin": "https://duckduckgo.com",
 }
-
-
-def _safe_float(value, default, minimum=None, maximum=None):
-    try:
-        parsed = float(value)
-    except (TypeError, ValueError):
-        parsed = float(default)
-    if minimum is not None:
-        parsed = max(minimum, parsed)
-    if maximum is not None:
-        parsed = min(maximum, parsed)
-    return parsed
-
-
-def _safe_int(value, default, minimum=None, maximum=None):
-    try:
-        parsed = int(value)
-    except (TypeError, ValueError):
-        parsed = int(default)
-    if minimum is not None:
-        parsed = max(minimum, parsed)
-    if maximum is not None:
-        parsed = min(maximum, parsed)
-    return parsed
-
-
-def _get_net_settings():
-    try:
-        cfg = mw.addonManager.getConfig(__name__) or {}
-    except Exception:
-        cfg = {}
-    timeout_s = _safe_float(cfg.get("request_timeout_s", 10.0), 10.0, minimum=1.0, maximum=120.0)
-    max_retries = _safe_int(cfg.get("max_retries", 5), 5, minimum=0, maximum=10)
-    backoff_base_s = _safe_float(cfg.get("backoff_base_s", 0.75), 0.75, minimum=0.05, maximum=10.0)
-    return timeout_s, max_retries, backoff_base_s
 
 
 def _request_with_retry(url, params, timeout_s, max_retries, backoff_base_s):
@@ -97,7 +65,7 @@ def get_ddg_images(query: str) -> list[str]:
     if not query:
         return []
 
-    timeout_s, max_retries, backoff_base_s = _get_net_settings()
+    timeout_s, max_retries, backoff_base_s = get_net_settings()
     vqd = _get_vqd(query, timeout_s, max_retries, backoff_base_s)
     if not vqd:
         return []

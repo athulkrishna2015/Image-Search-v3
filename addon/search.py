@@ -1,5 +1,7 @@
 # search.py
 
+from __future__ import annotations
+
 from anki.utils import strip_html_media
 from . import utils
 
@@ -122,6 +124,7 @@ def getnextresultbyquery(query: str) -> str | None:
     q = _clean_query(query)
     if q in RESULTS and INDICES.get(q, -1) < len(RESULTS[q]) - 1:
         INDICES[q] += 1
+    _touch_query(q)
     return _current_url(q)
 
 
@@ -129,4 +132,5 @@ def getprevresultbyquery(query: str) -> str | None:
     q = _clean_query(query)
     if q in RESULTS and INDICES.get(q, -1) > 0:
         INDICES[q] -= 1
+    _touch_query(q)
     return _current_url(q)
