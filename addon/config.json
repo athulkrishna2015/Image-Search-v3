@@ -6,5 +6,6 @@
   "max_retries": 5,
   "backoff_base_s": 0.75,
   "google_fallback_to_yandex": true,
-  "log_level": "info"
+  "log_level": "info",
+  "auto_show_support_on_update": true
 }

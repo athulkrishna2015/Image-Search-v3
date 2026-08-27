@@ -5,6 +5,17 @@ and is not part of the Anki collection. The principle is: **keep
 state local to the editor window when possible, share when there
 is only one logical instance.**
 
+## `addon/update_check.py`
+
+No module-level state. All access to `meta.json` is via
+`mw.addonManager.addonMeta` / `writeAddonMeta`, so the canonical
+state lives in `addon/meta.json` (gitignored, Anki-managed):
+
+| Key | Type | Set by | Read by |
+| --- | --- | --- | --- |
+| `supporter_opt_out` | bool | The Support tab's supporter checkbox. | `should_show_support_welcome`. |
+| `last_support_welcome_version` | string | `mark_support_welcomed`. | `should_show_support_welcome`. |
+
 ## `addon/logger.py`
 
 | Name | Type | Scope | Lifetime | Notes |

@@ -93,6 +93,15 @@ and three different image search providers.
      `editor.loadNote()` so focus/undo are preserved.
    - `append` / `prepend`: append/prepend the new tag, then call
      `editor.loadNote()` to refresh the view.
+8. **Settings dialog** — opening it via the Tools menu constructs
+   `SettingsDialog` and `exec()`s it. The dialog:
+   - Builds one widget per tab (NoteTypes / Network / Logs / Support).
+   - Calls `update_check.should_show_support_welcome(self.config)`. If
+     the add-on was updated since the user was last welcomed (and the
+     user has not opted out), the Support tab is auto-focused and
+     `update_check.mark_support_welcomed()` records the new version.
+   - Save writes through to `addonManager.writeConfig`; supporter
+     opt-out writes through to `addonManager.writeAddonMeta`.
 
 ## Boundaries
 

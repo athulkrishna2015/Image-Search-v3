@@ -4,38 +4,56 @@ The repo includes two helper scripts at the top level:
 
 | Script | What it does |
 | --- | --- |
-| `bump.py` | Reads `addon/manifest.json`, increments the minor component, and writes the new version into `addon/manifest.json` and `addon/VERSION`. |
-| `new_version.py` | Lower-level: `read_manifest_version`, `bump_version_string`, `update_version`. Used by `bump.py` and `make_ankiaddon.py`. |
-| `make_ankiaddon.py` | Auto-bumps the version, then zips `addon/` (minus excluded paths) into `<slug>_<version>.ankiaddon`. |
+| `bump.py` | Reads `addon/manifest.json` and `addon/VERSION`, increments the chosen part (default `patch`), and writes the new version back to both files. CLI: `python3 bump.py [major|minor|patch]`. |
+| `make_ankiaddon.py` | Calls `bump.bump_version` to bump the patch version, then zips `addon/` (minus the patterns in `.gitignore` and a few hard-coded local-state files) into `<slug>_v<version>_<timestamp>.ankiaddon`. CLI: `python3 make_ankiaddon.py [VERSION] [--clean]`. |
 
 ## Version scheme
 
-`3.<major>.<minor>`. The leading `3` is fixed and matches the Anki
-add-on's public package id `178037783`. Bumping is enforced by
-`new_version._VERSION_RE`; any other shape raises `ValueError`.
+`3.<major>.<minor>` for the Anki add-on's display version, where the
+leading `3` is fixed and matches the Anki add-on's public package id
+`178037783`. The build script writes both `addon/manifest.json` and
+`addon/VERSION` and stores `human_version` alongside `version` in
+the manifest for AnkiWeb.
 
 ## Excluded paths inside the .ankiaddon
 
-From `make_ankiaddon.py`:
+`make_ankiaddon.py` reads `.gitignore` at the repo root and uses
+its patterns (plus a few hard-coded runtime files) to decide which
+paths to skip. As of this writing:
 
-- **Dirs:** `__pycache__`, `.git`, `.vscode`, `.github`, `tests`
-- **Exts:** `.ankiaddon`, `.pyc`
-- **Files:** `meta.json`, `.gitignore`, `.gitmodules`, `mypy.ini`
+- **From `.gitignore`:** `__pycache__/`, `.git/`, `.vscode/`,
+  `meta.json`, `addon/meta.json`, `addon/logs/`, `*.log`,
+  `*.ankiaddon`, `venv/`, `.venv/`, `env/`, `.env`, `*.pyc`,
+  `*.py[cod]`, etc.
+- **Hard-coded in the script** (in addition to the gitignore filter):
+  `meta.json`, `batch_state.json`, `blacklist.json`, anything ending
+  in `.log` or matching `*.log.*`.
 
-This is what keeps `meta.json` (user state) and the build artifacts
-themselves out of the distribution.
+This is what keeps `meta.json` (user state, possibly with secrets),
+`addon/logs/` (rotating log files), and build artifacts out of the
+distribution. `config.json` is always included.
 
 ## Building locally
 
 ```bash
-# Bump and package
+# Bump patch and package (default)
 python3 make_ankiaddon.py
 
-# Only bump, no package
-python3 bump.py
+# Bump with a specific part (writes to manifest.json / VERSION)
+python3 bump.py patch        # default
+python3 bump.py minor
+python3 bump.py major
+
+# Package a specific version without bumping
+python3 make_ankiaddon.py 3.11.4
+
+# Remove old .ankiaddon files first
+python3 make_ankiaddon.py --clean
 ```
 
-The result is `Image_Search_v3_<version>.ankiaddon` in the repo root.
+The result is `<addon_name>_v<version>_<timestamp>.ankiaddon` in the
+repo root (e.g. `Image_Search_v3_v3.11.3_202608280136.ankiaddon`).
+Older packages are kept on disk unless `--clean` is passed.
 
 ## Manual install (for testing)
 

@@ -14,6 +14,8 @@ Image Search v3 is a powerful Anki add-on that lets you quickly find and add ima
 - **Search on Selection**: Simply highlight any text in the editor and use the search button or right-click context menu to search for an image.
 - **Toolbar Integration**: Adds 🖼, ⬅, and ➡ buttons directly to the Anki editor toolbar for a fast workflow.
 - **Right-Click Context Menu**: Right-click on highlighted text to instantly start an image search. 
+- **Support Tab with Supporter Opt-out**: A dedicated Support tab with Ko-fi, UPI, BTC, and ETH addresses, and an "I have supported this addon" checkbox that hides the automatic post-update welcome.
+- **Update Welcome**: When the add-on is updated, the Support tab opens automatically the next time you open the settings dialog (no startup cost — the check runs only on dialog open). The opt-out checkbox in the Support tab turns this off.
 
 ## Usage
 
@@ -40,6 +42,22 @@ There are three ways to search for an image in the card editor:
 <img width="2396" height="2044" alt="Screenshot_20251031_152224" src="https://github.com/user-attachments/assets/d311adb6-0313-4b65-9999-bc8aef374c5a" />
 <img width="2396" height="2044" alt="Screenshot_20251031_152301" src="https://github.com/user-attachments/assets/f4c23fd3-0646-411a-a105-3120da3adda5" />
 <img width="2396" height="2044" alt="Screenshot_20251031_152339" src="https://github.com/user-attachments/assets/ad8558af-233b-4fe5-a67f-1e869d76eb07" />
+
+### 3. Support tab & post-update welcome
+
+- Open **Tools → Image Search v3 Settings → Support** to find Ko-fi,
+  UPI, BTC, and ETH addresses.
+- If you have supported the add-on, tick **"I have supported this addon"**
+  at the top of the Support tab. The add-on records your preference in
+  `meta.json` (not in your committed config) and stops opening the
+  Support tab on every update.
+- The post-update welcome only runs when you open the settings dialog
+  (not at Anki startup), so it has zero effect on startup time.
+- To disable the welcome entirely (for example in a managed
+  environment), set `auto_show_support_on_update` to `false` in your
+  add-on config (the Logs tab is the easiest place to edit JSON via
+  `Tools → Image Search v3 Settings → Logs`; or use **Tools →
+  Add-ons → Image Search v3 → Config**).
 
 ## Provider notes
 
@@ -86,6 +104,11 @@ modules, JSON keys, errors, build, security, testing) lives under
   modals; Yandex parser accepts both `data-bem` quote styles and
   protocol-relative thumb URLs; stale `query_fields: ["Front"]`
   default removed.
+- **Next** — Supporter opt-out checkbox in the Support tab; the
+  Support tab opens automatically the next time you open the settings
+  dialog after an add-on update (lazy, no Anki startup cost).
+  Controlled by the new `auto_show_support_on_update` config key
+  (default `true`).
 - **3.11.2 (2026-03-27)** — Ko-fi support widget; UPI / BTC / ETH QR
   codes on the Support tab.
 - **3.11.0 (2026-03-17)** — DuckDuckGo (hidden API) provider; emoji

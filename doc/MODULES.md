@@ -8,6 +8,20 @@ Entry point. Defines `setup()` and runs it on import. Imports
 `ui_editor` and `ui_menu` lazily inside `setup()` to avoid
 circular-import issues during Anki's add-on reload cycle.
 
+## `addon/update_check.py`
+
+Cheap, side-effect-free helper used by the settings dialog to decide
+whether to switch to the Support tab on dialog open. Runs **only** on
+dialog construction — never at module import or Anki startup — so
+opening the settings dialog is the only place that pays for the
+check.
+
+| Symbol | Purpose |
+| --- | --- |
+| `current_version()` | Read the version string from `addon/manifest.json`. |
+| `should_show_support_welcome(config)` | Return `True` exactly once per version bump, when the user opens the settings dialog. Returns `False` if `config['auto_show_support_on_update']` is `False`, if `meta.json` has `supporter_opt_out: true`, or if the last-seen version equals the current one. |
+| `mark_support_welcomed()` | Persist the current version as `last_support_welcome_version` in `meta.json` via `mw.addonManager.writeAddonMeta`. |
+
 ## `addon/logger.py`
 
 Rotating file logger. The handler is attached lazily on first use so

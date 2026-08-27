@@ -11,44 +11,47 @@ from aqt.qt import (
     QVBoxLayout,
 )
 
+from . import update_check
 from . import utils
 from .logger import log
-from .tabs import LogsTab, NetworkTab, NoteTypesTab, SupportTab
+from .tabs import (
+    ADDON_PACKAGE,
+    LogsTab,
+    NetworkTab,
+    NoteTypesTab,
+    SupportTabMixin,
+)
 
 _MENU_INSTALLED = False
 _MW_MENU_FLAG = "_imgsearchv3_menu_installed"
 
 
-class SettingsDialog(QDialog):
+class SettingsDialog(QDialog, SupportTabMixin):
+    """
+    Settings dialog for Image Search v3. Composes per-tab widgets under
+    `addon/tabs/`, with the Support tab contributed by `SupportTabMixin`.
+    The auto-pop on update happens lazily here, when the user opens the
+    dialog, so Anki startup is not affected.
+    """
+
     def __init__(self, parent=None):
-        super().__init__(parent)
+        QDialog.__init__(self, parent)
+        SupportTabMixin.__init__(self)
+
         self.setWindowTitle("Image Search v3 Settings")
         self.setMinimumWidth(720)
 
         self.config = utils.get_config() or {}
-        self.status_label = QLabel("", self)
-        self.status_label.setStyleSheet("color: #2e7d32;")
+        self._any_dirty = False
 
         layout = QVBoxLayout(self)
         self.tabs = QTabWidget(self)
         layout.addWidget(self.tabs)
 
-        # Per-tab dirty flag, set via self._mark_dirty.
-        self._any_dirty = False
-
-        self.nt_tab = NoteTypesTab(self.config, on_dirty=self._mark_dirty, parent=self)
-        self.net_tab = NetworkTab(self.config, on_dirty=self._mark_dirty, parent=self)
-        self.log_tab = LogsTab(self.config, on_dirty=self._mark_dirty, parent=self)
-        self.support_tab = SupportTab(self.config, on_dirty=self._mark_dirty, parent=self)
-
-        self.tabs.addTab(self.nt_tab, self.nt_tab.title)
-        self.tabs.addTab(self.net_tab, self.net_tab.title)
-        self.tabs.addTab(self.log_tab, self.log_tab.title)
-        self.tabs.addTab(self.support_tab, self.support_tab.title)
-
-        # Switch to the Logs tab when config has a fresh warning; otherwise
-        # start on Note Types.
-        self.tabs.setCurrentWidget(self.nt_tab)
+        self.status_label = QLabel("", self)
+        self.status_label.setStyleSheet("color: #2e7d32;")
+        # Ensure the label exists before the mixin populates its tabs.
+        self._build_tabs()
 
         layout.addWidget(self.status_label)
 
@@ -66,16 +69,44 @@ class SettingsDialog(QDialog):
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
 
+        self._maybe_focus_support_tab()
+
+    # ---- tab assembly ----
+    def _build_tabs(self):
+        self.nt_tab = NoteTypesTab(self.config, on_dirty=self._mark_dirty, parent=self)
+        self.net_tab = NetworkTab(self.config, on_dirty=self._mark_dirty, parent=self)
+        self.log_tab = LogsTab(self.config, on_dirty=self._mark_dirty, parent=self)
+        # Support tab is built by the mixin; it uses mw.addonManager.addonMeta
+        # so the supporter-opt-out checkbox is wired in.
+        self.support_tab = self._create_support_tab()
+
+        self.tabs.addTab(self.nt_tab, self.nt_tab.title)
+        self.tabs.addTab(self.net_tab, self.net_tab.title)
+        self.tabs.addTab(self.log_tab, self.log_tab.title)
+        self.tabs.addTab(self.support_tab, "Support")
+        self.tabs.setCurrentWidget(self.nt_tab)
+
+    def _maybe_focus_support_tab(self):
+        """
+        If the add-on was updated since the user was last welcomed, switch
+        to the Support tab on dialog open. This runs only on dialog
+        construction (user-initiated), never at add-on import.
+        """
+        try:
+            if update_check.should_show_support_welcome(self.config):
+                self.tabs.setCurrentWidget(self.support_tab)
+                update_check.mark_support_welcomed()
+                log.info("auto-showed Support tab (post-update welcome)")
+        except Exception as exc:
+            log.warning("auto-show support tab failed: %r", exc)
+
+    # ---- dirty / save ----
     def _mark_dirty(self):
         self._any_dirty = True
         if self.status_label.text():
             self.status_label.setText("")
 
-    def _clear_status(self):
-        self.status_label.setText("")
-
     def _save_only(self):
-        # Pull everything from each tab into self.config, then persist.
         if self.nt_tab.is_dirty():
             self.nt_tab.save_current()
 
@@ -83,9 +114,8 @@ class SettingsDialog(QDialog):
         for key, value in net.items():
             self.config[key] = value
 
-        # log_level is already mutated in-place by the Logs tab.
+        # The Logs tab mutates config['log_level'] in place; nothing to do.
 
-        # Strip legacy keys.
         for legacy in ("query_field", "query_fields", "image_field", "search_engine"):
             self.config.pop(legacy, None)
 
@@ -127,3 +157,6 @@ def init_menu():
     _MENU_INSTALLED = True
     if mw:
         setattr(mw, _MW_MENU_FLAG, True)
+
+
+__all__ = ["SettingsDialog", "settings_dialog", "init_menu", "ADDON_PACKAGE"]

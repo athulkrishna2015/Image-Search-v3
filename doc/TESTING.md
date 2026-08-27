@@ -13,9 +13,15 @@ Expected: **23 tests, all passing**.
 
 ```
 tests/
-├── test_search.py  ← provider routing, fallback, LRU cache, nav
-└── test_utils.py   ← suffix inference, image_tag, prefix sanitization,
-                      smart-replace, LRU touch-on-nav
+├── test_search.py            ← provider routing, fallback, LRU cache, nav
+├── test_utils.py             ← suffix inference, image_tag, prefix sanitization,
+│                                smart-replace, LRU touch-on-nav
+├── test_logger.py            ← logger: level set/filter, file creation, clear,
+│                                tail truncation, missing file
+└── test_bump_and_update.py   ← bump.py: validate / increment / sync / read /
+                                 bump_version; update_check: should_show /
+                                 mark_welcomed, opt-out, disabled, no-startup-
+                                 side-effects (AST inspection)
 ```
 
 Both files live in a regular directory (no `__init__.py`). Discovery
