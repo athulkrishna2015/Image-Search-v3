@@ -67,47 +67,37 @@ If you find this add-on useful, please consider supporting its development:
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/D1D01W6NQT)
 
-## Update (2026-03-17)
+## Changelog
 
-- Added a DuckDuckGo (hidden API) provider option alongside Yandex (default) and Google.
-- Toolbar buttons now use emoji labels (🖼 ⬅ ➡) since image assets were removed.
-- Build/version scripts now enforce the `3.<major>.<minor>` scheme with a fixed leading `3`.
+The full release history is in [CHANGELOG.md](./CHANGELOG.md) (newest
+first, grouped by version, with links to the corresponding GitHub
+releases). Contributor and maintainer documentation (architecture,
+modules, JSON keys, errors, build, security, testing) lives under
+[doc/](./doc/).
 
-## Update (2026-02-24)
+### Latest changes (summary)
 
-- Security: removed insecure TLS behavior in Yandex requests (no disabled certificate verification/warnings suppression).
-- Reliability: hardened network config parsing (timeout/retries/backoff) with safe fallbacks and value bounds to avoid crashes from malformed config values.
-- Reliability: fixed temporary file cleanup to ensure downloaded temp files are deleted even when download/media import fails.
-- Stability: network availability check now restores the previous global socket timeout instead of mutating process-wide defaults.
-- UX/Data safety: fixed settings dialog dirty-state handling so switching note types does not silently discard unsaved Network tab changes.
-- UX/Stability: made editor hook and Tools menu registration idempotent to prevent duplicate toolbar/context-menu/menu entries on add-on reloads.
-- Performance: added a bounded in-memory query cache (LRU-style eviction) to prevent unbounded growth during long sessions.
-
-## Update (2025-11-04)
-
-- Added Google provider using Custom Search JSON API with images; enter your Google API key and CSE ID (cx) in settings and select Google as provider, with automatic fallback to Yandex if Google returns no items.
-- Settings now include provider selection plus request timeout, max retries, and exponential backoff base, grouped under the Network tab. 
-- Image saving infers file extensions from URLs (jpg/jpeg/png/gif/webp/bmp) instead of forcing a single format to improve media compatibility across providers. 
-- Network availability check tries multiple hosts to reduce false offline errors in restrictive networks or partial outages. 
-- Settings dialog initialization hardened so status messages work reliably even if signals fire early during widget setup. 
-
-## Update (2025-10-31)
-
-- Smart Replace now replaces only images inserted by this add-on (identified by class="imgsearch") and never overwrites existing text or manually pasted images; if no prior add-on image exists, it appends instead. 
-
-- Default placement is “replace” in code and settings, but it remains non-destructive: original field content is preserved and only prior add-on images are swapped. 
-
-- Right‑click context menu is registered using gui_hooks.editor_will_show_context_menu with a legacy fallback for older builds, so “Search image for selection” appears reliably. 
-
-- Yandex request pipeline hardened: explicit timeouts, limited retries with backoff, and robust JSON checks to avoid KeyError/TypeError on slow or offline networks. 
-
-- Media downloads are offline-aware: quick DNS check, structured error codes (offline/network/unexpected), and a single concise user message instead of duplicate popups. 
-
-- Per-note-type settings dialog: Save no longer closes the dialog; defaults initialize placement to “replace,” first field for queries, and last field for images. 
-
-- Safer field resolution: if a configured image field is missing, the add-on falls back to the last field and warns; query field selection falls back to the first field. 
-
-- Default config simplified: global image_field removed; query_fields defaults to ["Front"] for cleaner per-note-type configuration. 
+- **Unreleased** — network image downloads now share the same
+  retry/backoff settings as the search providers; smart-replace no
+  longer calls `editor.loadNote()` (preserves focus, cursor, undo);
+  per-editor `last_query`; LRU touch on next/prev; sanitized
+  `mkstemp` prefix; HTML-escaped `image_tag`; throttled warning
+  modals; Yandex parser accepts both `data-bem` quote styles and
+  protocol-relative thumb URLs; stale `query_fields: ["Front"]`
+  default removed.
+- **3.11.2 (2026-03-27)** — Ko-fi support widget; UPI / BTC / ETH QR
+  codes on the Support tab.
+- **3.11.0 (2026-03-17)** — DuckDuckGo (hidden API) provider; emoji
+  toolbar labels; build scripts enforce `3.<major>.<minor>`.
+- **3.9.0 (2026-02-24)** — secure TLS; hardened network config
+  parsing; bounded LRU cache; idempotent hook/menu registration;
+  fixed settings dialog dirty-state handling.
+- **3.8.6 (2025-11-04)** — Google Custom Search (images) provider
+  with fallback; per-network-tab settings; image extension inferred
+  from URL; multi-host offline check.
+- **3.6.x (2025-10-31)** — Smart Replace; offline-aware media
+  downloads with structured error codes; per-note-type settings
+  dialog; safer field resolution.
 
 ## License
 
