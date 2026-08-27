@@ -22,6 +22,12 @@ tests/
 │                             ← logger 'all' level, below-DEBUG capture,
 │                                tail_text UnboundLocalError regression,
 │                                supporter opt-out defensive write
+├── test_log_check_and_clear.py
+│                             ← log scanner (Traceback, Timeout, provider
+│                                give-up, settings save failure), sample
+│                                truncation, clear-on-startup default/off/
+│                                enabled/missing-file, non-modal dialog
+│                                AST inspection
 ├── test_bump_and_update.py   ← bump.py: validate / increment / sync / read /
                                  bump_version; update_check: should_show /
                                  mark_welcomed, opt-out, disabled, no-startup-

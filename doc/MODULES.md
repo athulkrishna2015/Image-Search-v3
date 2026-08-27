@@ -6,7 +6,9 @@ Every Python file under `addon/`, what it owns, and what it exports.
 
 Entry point. Defines `setup()` and runs it on import. Imports
 `ui_editor` and `ui_menu` lazily inside `setup()` to avoid
-circular-import issues during Anki's add-on reload cycle.
+circular-import issues during Anki's add-on reload cycle. Also
+applies the user's `log_level` and clears the log file on startup
+if `clear_logs_on_startup` is true.
 
 ## `addon/update_check.py`
 
@@ -40,6 +42,8 @@ touches the filesystem.
 | `log.get_level()` | Current level name. |
 | `log.tail_text(max_bytes=64 KiB)` | Last bytes of the current log for the Logs tab. |
 | `log.clear()` | Truncate current file and remove `.1`/`.2`/`.3` backups. |
+| `log.check_log_file(max_bytes=256 KiB)` | Scan the log for known error patterns (`Traceback`, `Timeout`, `yimages: giving up`, etc.). Returns a structured report used by the "Check log file" button on the Logs tab. |
+| `log.maybe_clear_on_startup(config)` | If `config['clear_logs_on_startup']` is truthy and the log file exists, truncate it. Called from `addon/__init__.setup()`. Returns `True` if anything was cleared. |
 | `log.log_path()` / `log.log_dir()` | Absolute paths used by the Logs tab. |
 
 ## `addon/utils.py`

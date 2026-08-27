@@ -17,6 +17,8 @@ Image Search v3 is a powerful Anki add-on that lets you quickly find and add ima
 - **Support Tab with Supporter Opt-out**: A dedicated Support tab with Ko-fi, UPI, BTC, and ETH addresses, and an "I have supported this addon" checkbox that hides the automatic post-update welcome.
 - **Update Welcome**: When the add-on is updated, the Support tab opens automatically the next time you open the settings dialog (no startup cost — the check runs only on dialog open). The opt-out checkbox in the Support tab turns this off.
 - **Built-in Log Viewer**: The Logs tab shows a rotating log file (512 KiB × 3). Lazy-loaded — nothing is read from disk until you click Refresh. A "Log debug" checkbox toggles maximum verbosity on/off without picking a level from the dropdown; the "All" level captures even sub-DEBUG noise from third-party libraries.
+- **Log Health Scan**: A "Check log file" button on the Logs tab scans the log for known error patterns (tracebacks, timeouts, permission errors, provider give-ups, etc.) and shows a per-category summary so you can spot issues without re-reading the whole file.
+- **Non-Modal Settings**: The settings dialog is non-modal — you can keep editing cards in Anki while it's open. A second click on the menu re-focuses the existing window instead of stacking a new one.
 
 ## Usage
 
@@ -109,7 +111,10 @@ modules, JSON keys, errors, build, security, testing) lives under
   Support tab opens automatically the next time you open the settings
   dialog after an add-on update (lazy, no Anki startup cost).
   Controlled by the new `auto_show_support_on_update` config key
-  (default `true`).
+  (default `true`). The settings dialog is now non-modal so the Anki
+  main window stays usable while it's open. The Logs tab gained a
+  "Check log file" button (scans for known error patterns) and a
+  "Clear log on add-on startup" checkbox (default on).
 - **3.11.2 (2026-03-27)** — Ko-fi support widget; UPI / BTC / ETH QR
   codes on the Support tab.
 - **3.11.0 (2026-03-17)** — DuckDuckGo (hidden API) provider; emoji

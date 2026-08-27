@@ -25,6 +25,7 @@ shape.
 | `backoff_base_s` | float | `0.75` | Exponential backoff base in seconds. Sleep before retry `n` is `backoff_base_s * 2 ** n`. Clamped to `[0.05, 10.0]`. |
 | `log_level` | string | `"info"` | One of `"all"`, `"debug"`, `"info"`, `"warning"`, `"error"`, `"critical"`. Controlled from the Logs tab. Unknown values are ignored. `"all"` uses a negative numeric level so even third-party log noise is captured. |
 | `log_debug` | bool | `false` | Convenience toggle in the Logs tab: when on, sets the level to `"all"`; when off, restores the level from `log_level` (default `"info"`). |
+| `clear_logs_on_startup` | bool | `true` | When true, the add-on truncates the log file on import. Disable to keep a long history across restarts. Toggled in the Logs tab. |
 | `auto_show_support_on_update` | bool | `true` | When the add-on is updated, the Support tab opens automatically the next time the user opens the settings dialog. Disabled by ticking **"I have supported this addon"** in the Support tab (which is stored separately in `meta.json`). |
 | `configs_by_notetype_id` | object | `{}` | Map of note-type id (as string) → per-note-type config (see below). |
 

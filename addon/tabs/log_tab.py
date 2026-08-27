@@ -11,6 +11,7 @@ from aqt.qt import (
     QCheckBox,
     QComboBox,
     QFileDialog,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
     QMessageBox,
@@ -35,6 +36,7 @@ _LEVELS = [
 ]
 
 _DEBUG_KEY = "log_debug"
+_CLEAR_ON_STARTUP_KEY = "clear_logs_on_startup"
 
 
 class LogsTab(TabPage):
@@ -56,9 +58,13 @@ class LogsTab(TabPage):
         path_row.addWidget(self.path_label, 1)
         self.body.addLayout(path_row)
 
+        # Verbosity group
+        verbosity = QGroupBox("Verbosity", self)
+        v_layout = QVBoxLayout(verbosity)
+
         # Quick toggle: enable maximum logging without picking a level.
         self.debug_chk = QCheckBox(
-            "Log debug (maximum verbosity, off by default)", self
+            "Log debug (maximum verbosity, off by default)", verbosity
         )
         self.debug_chk.setToolTip(
             "When on, the add-on logs at the 'all' level (everything). "
@@ -66,12 +72,12 @@ class LogsTab(TabPage):
         )
         self.debug_chk.setChecked(bool(self.config.get(_DEBUG_KEY, False)))
         self.debug_chk.toggled.connect(self._on_debug_toggled)
-        self.body.addWidget(self.debug_chk)
+        v_layout.addWidget(self.debug_chk)
 
         # Log level row
         level_row = QHBoxLayout()
         level_row.addWidget(QLabel("Log level:"))
-        self.level_combo = QComboBox(self)
+        self.level_combo = QComboBox(verbosity)
         for label, value in _LEVELS:
             self.level_combo.addItem(label, value)
         cur_level = (self.config.get("log_level") or log.get_level()).lower()
@@ -82,7 +88,9 @@ class LogsTab(TabPage):
         self.level_combo.currentIndexChanged.connect(self._on_level_changed)
         level_row.addWidget(self.level_combo)
         level_row.addStretch()
-        self.body.addLayout(level_row)
+        v_layout.addLayout(level_row)
+
+        self.body.addWidget(verbosity)
 
         # Log text area. Placeholder text is shown until the user actually
         # asks to load it; this keeps dialog open instant even for large
@@ -99,6 +107,12 @@ class LogsTab(TabPage):
         buttons = QHBoxLayout()
         self.refresh_btn = QPushButton("Refresh", self)
         self.refresh_btn.clicked.connect(self._refresh_text)
+        self.check_btn = QPushButton("Check log file", self)
+        self.check_btn.setToolTip(
+            "Scan the log for known error patterns (tracebacks, timeouts, "
+            "permission errors, provider failures, etc.) and show a summary."
+        )
+        self.check_btn.clicked.connect(self._check_log_file)
         self.clear_btn = QPushButton("Clear log", self)
         self.clear_btn.clicked.connect(self._clear_log)
         self.copy_btn = QPushButton("Copy to clipboard", self)
@@ -110,6 +124,7 @@ class LogsTab(TabPage):
 
         for btn in (
             self.refresh_btn,
+            self.check_btn,
             self.clear_btn,
             self.copy_btn,
             self.open_btn,
@@ -119,11 +134,41 @@ class LogsTab(TabPage):
         buttons.addStretch()
         self.body.addLayout(buttons)
 
+        # Health summary (populated by "Check log file")
+        self.findings_label = QLabel("", self)
+        self.findings_label.setWordWrap(True)
+        self.findings_label.setStyleSheet("color: #444;")
+        self.findings_label.setTextInteractionFlags(
+            self.findings_label.textInteractionFlags()
+            | Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        self.body.addWidget(self.findings_label)
+
+        # Maintenance group
+        maintenance = QGroupBox("Maintenance", self)
+        m_layout = QVBoxLayout(maintenance)
+
+        self.clear_on_startup_chk = QCheckBox(
+            "Clear log on add-on startup (default)", maintenance
+        )
+        self.clear_on_startup_chk.setToolTip(
+            "When enabled, the log file is truncated every time the add-on "
+            "is loaded. Useful if you only care about the current session's "
+            "logs. Disable if you want a longer history across restarts."
+        )
+        self.clear_on_startup_chk.setChecked(
+            bool(self.config.get(_CLEAR_ON_STARTUP_KEY, True))
+        )
+        self.clear_on_startup_chk.toggled.connect(self._on_clear_on_startup_toggled)
+        m_layout.addWidget(self.clear_on_startup_chk)
+
+        self.body.addWidget(maintenance)
+
         # Help
         help_label = QLabel(
             "Logs are rotated at 512 KiB x 3. The log viewer is lazy: nothing "
-            "is read from disk until you click Refresh. To capture a bug, "
-            "tick 'Log debug' and reproduce the issue, then Refresh."
+            "is read from disk until you click Refresh. To scan for known "
+            "error patterns, click 'Check log file'."
         )
         help_label.setWordWrap(True)
         help_label.setStyleSheet("color: #666;")
@@ -151,9 +196,6 @@ class LogsTab(TabPage):
             return
         log.set_level(value)
         self.config["log_level"] = value
-        # If the user manually changes the level, the "log debug" toggle
-        # becomes a representation of "is level <= debug?"; uncheck it
-        # if they pick a less verbose level.
         is_verbose = value in ("all", "debug")
         if self.debug_chk.isChecked() != is_verbose:
             self.debug_chk.blockSignals(True)
@@ -167,12 +209,9 @@ class LogsTab(TabPage):
         if checked:
             target = "all"
         else:
-            # Restore the previously configured level (or the current logger
-            # level if no preference is set).
             target = (self.config.get("log_level") or "info")
         log.set_level(target)
         self.config[_DEBUG_KEY] = checked
-        # Sync the combo without re-emitting the change handler.
         for i in range(self.level_combo.count()):
             if self.level_combo.itemData(i) == target:
                 self.level_combo.blockSignals(True)
@@ -182,8 +221,47 @@ class LogsTab(TabPage):
         self.mark_dirty()
         log.info("log debug toggle: %s -> level=%s", checked, target)
 
+    def _on_clear_on_startup_toggled(self, checked: bool):
+        self.config[_CLEAR_ON_STARTUP_KEY] = bool(checked)
+        self.mark_dirty()
+        log.info("clear on startup: %s", checked)
+
     def _refresh_text(self):
         self.text.setPlainText(log.tail_text())
+
+    def _check_log_file(self):
+        report = log.check_log_file()
+        if not report.get("exists"):
+            self.findings_label.setText("Log file does not exist yet.")
+            return
+
+        size_kb = report["size_bytes"] / 1024.0
+        note = report.get("checked_bytes_note", "")
+        header = (
+            f"Scanned {report['checked_bytes']:,} bytes "
+            f"({report['line_count']:,} lines) of the {size_kb:.1f} KiB log file."
+        )
+        if note:
+            header += f"\n{note}"
+
+        findings = report.get("findings") or []
+        if not findings:
+            self.findings_label.setText(
+                f"{header}\nNo known error patterns found."
+            )
+            return
+
+        lines = [header, "Findings:"]
+        for f in findings:
+            lines.append(
+                f"  - {f['category']}: {f['count']} occurrence(s) "
+                f"(lines {f['first_line_no']}..{f['last_line_no']})"
+            )
+            if f.get("sample"):
+                lines.append(f"      sample: {f['sample']}")
+        if "error" in report:
+            lines.append(f"Scanner error: {report['error']}")
+        self.findings_label.setText("\n".join(lines))
 
     def _clear_log(self):
         ret = QMessageBox.question(
@@ -196,6 +274,7 @@ class LogsTab(TabPage):
             return
         if log.clear():
             self._refresh_text()
+            self.findings_label.setText("Log cleared.")
 
     def _copy_text(self):
         QApplication.clipboard().setText(self.text.toPlainText())
