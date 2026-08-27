@@ -18,6 +18,7 @@ from aqt.qt import (
     QPlainTextEdit,
     QPushButton,
     Qt,
+    QTimer,
     QVBoxLayout,
     QWidget,
 )
@@ -38,6 +39,10 @@ _LEVELS = [
 _DEBUG_KEY = "log_debug"
 _CLEAR_ON_STARTUP_KEY = "clear_logs_on_startup"
 
+# How often to poll the log file for new content (ms). Cheap; reads the
+# mtime only. Real work is only done when the file changed.
+_LIVE_TICK_MS = 1500
+
 
 class LogsTab(TabPage):
     title = "Logs"
@@ -46,8 +51,11 @@ class LogsTab(TabPage):
         super().__init__(config, on_dirty, parent)
         self._loaded = False
         self._loading = False
+        self._last_mtime = None  # mtime of the log file at last refresh
+        self._live = True        # live-update toggle
 
-        # Path row
+        # ==== All controls at the top ====
+        # 1) Path row
         path_row = QHBoxLayout()
         path_row.addWidget(QLabel("Log file:"))
         self.path_label = QLabel(self._safe_display_path(), self)
@@ -58,11 +66,9 @@ class LogsTab(TabPage):
         path_row.addWidget(self.path_label, 1)
         self.body.addLayout(path_row)
 
-        # Verbosity group
+        # 2) Verbosity group
         verbosity = QGroupBox("Verbosity", self)
         v_layout = QVBoxLayout(verbosity)
-
-        # Quick toggle: enable maximum logging without picking a level.
         self.debug_chk = QCheckBox(
             "Log debug (maximum verbosity, off by default)", verbosity
         )
@@ -74,7 +80,6 @@ class LogsTab(TabPage):
         self.debug_chk.toggled.connect(self._on_debug_toggled)
         v_layout.addWidget(self.debug_chk)
 
-        # Log level row
         level_row = QHBoxLayout()
         level_row.addWidget(QLabel("Log level:"))
         self.level_combo = QComboBox(verbosity)
@@ -89,23 +94,29 @@ class LogsTab(TabPage):
         level_row.addWidget(self.level_combo)
         level_row.addStretch()
         v_layout.addLayout(level_row)
-
         self.body.addWidget(verbosity)
 
-        # Log text area. Placeholder text is shown until the user actually
-        # asks to load it; this keeps dialog open instant even for large
-        # rotated logs.
-        self.text = QPlainTextEdit(self)
-        self.text.setReadOnly(True)
-        self.text.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
-        self.text.setPlaceholderText(
-            "(click Refresh to load the log; logs are not loaded automatically)"
+        # 3) Maintenance group
+        maintenance = QGroupBox("Maintenance", self)
+        m_layout = QVBoxLayout(maintenance)
+        self.clear_on_startup_chk = QCheckBox(
+            "Clear log on add-on startup (default)", maintenance
         )
-        self.body.addWidget(self.text, 1)
+        self.clear_on_startup_chk.setToolTip(
+            "When enabled, the log file is truncated every time the add-on "
+            "is loaded. Disable to keep a longer history across restarts."
+        )
+        self.clear_on_startup_chk.setChecked(
+            bool(self.config.get(_CLEAR_ON_STARTUP_KEY, True))
+        )
+        self.clear_on_startup_chk.toggled.connect(self._on_clear_on_startup_toggled)
+        m_layout.addWidget(self.clear_on_startup_chk)
+        self.body.addWidget(maintenance)
 
-        # Buttons row
+        # 4) Buttons row (right above the text area, all controls together)
         buttons = QHBoxLayout()
         self.refresh_btn = QPushButton("Refresh", self)
+        self.refresh_btn.setToolTip("Reload the log file from disk.")
         self.refresh_btn.clicked.connect(self._refresh_text)
         self.check_btn = QPushButton("Check log file", self)
         self.check_btn.setToolTip(
@@ -134,7 +145,13 @@ class LogsTab(TabPage):
         buttons.addStretch()
         self.body.addLayout(buttons)
 
-        # Health summary (populated by "Check log file")
+        # Live-update toggle
+        self.live_chk = QCheckBox("Live update (auto-refresh as new lines are logged)", self)
+        self.live_chk.setChecked(True)
+        self.live_chk.toggled.connect(self._on_live_toggled)
+        self.body.addWidget(self.live_chk)
+
+        # Findings label (populated by "Check log file")
         self.findings_label = QLabel("", self)
         self.findings_label.setWordWrap(True)
         self.findings_label.setStyleSheet("color: #444;")
@@ -144,35 +161,33 @@ class LogsTab(TabPage):
         )
         self.body.addWidget(self.findings_label)
 
-        # Maintenance group
-        maintenance = QGroupBox("Maintenance", self)
-        m_layout = QVBoxLayout(maintenance)
-
-        self.clear_on_startup_chk = QCheckBox(
-            "Clear log on add-on startup (default)", maintenance
-        )
-        self.clear_on_startup_chk.setToolTip(
-            "When enabled, the log file is truncated every time the add-on "
-            "is loaded. Useful if you only care about the current session's "
-            "logs. Disable if you want a longer history across restarts."
-        )
-        self.clear_on_startup_chk.setChecked(
-            bool(self.config.get(_CLEAR_ON_STARTUP_KEY, True))
-        )
-        self.clear_on_startup_chk.toggled.connect(self._on_clear_on_startup_toggled)
-        m_layout.addWidget(self.clear_on_startup_chk)
-
-        self.body.addWidget(maintenance)
-
-        # Help
+        # Help line
         help_label = QLabel(
-            "Logs are rotated at 512 KiB x 3. The log viewer is lazy: nothing "
-            "is read from disk until you click Refresh. To scan for known "
-            "error patterns, click 'Check log file'."
+            "Logs are rotated at 512 KiB x 3. The text area auto-refreshes "
+            "when 'Live update' is on; click Refresh to force a reload. "
+            "Click 'Check log file' to scan for known error patterns."
         )
         help_label.setWordWrap(True)
         help_label.setStyleSheet("color: #666;")
         self.body.addWidget(help_label)
+
+        # ==== Text area at the bottom, takes all remaining space ====
+        self.text = QPlainTextEdit(self)
+        self.text.setReadOnly(True)
+        self.text.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+        self.text.setPlaceholderText(
+            "(click Refresh to load the log; logs are not loaded automatically)"
+        )
+        # Make the text area the dominant widget so the user has plenty
+        # of room to read logs.
+        self.body.addWidget(self.text, 1)
+
+        # Live-update timer: cheap mtime poll.
+        self._timer = QTimer(self)
+        self._timer.setInterval(_LIVE_TICK_MS)
+        self._timer.timeout.connect(self._on_live_tick)
+        # Only start when the tab is shown.
+        self.destroyed.connect(self._timer.stop)
 
     # ---- public API used by the dialog ----
     def load_if_needed(self):
@@ -185,6 +200,8 @@ class LogsTab(TabPage):
         finally:
             self._loading = False
         self._loaded = True
+        if self._live and not self._timer.isActive():
+            self._timer.start()
 
     # ---- internals ----
     def _safe_display_path(self) -> str:
@@ -226,8 +243,68 @@ class LogsTab(TabPage):
         self.mark_dirty()
         log.info("clear on startup: %s", checked)
 
+    def _on_live_toggled(self, checked: bool):
+        self._live = bool(checked)
+        if self._live:
+            # Force a refresh immediately so the user sees the latest.
+            self._last_mtime = None
+            self._refresh_text()
+            if not self._timer.isActive():
+                self._timer.start()
+        else:
+            self._timer.stop()
+
+    def _on_live_tick(self):
+        """
+        Cheap mtime poll. Only do real work if the log file's mtime
+        has changed since the last refresh.
+        """
+        path = log.log_path()
+        try:
+            mtime = os.path.getmtime(path)
+        except OSError:
+            return
+        if mtime != self._last_mtime:
+            self._refresh_text()
+
     def _refresh_text(self):
-        self.text.setPlainText(log.tail_text())
+        # We don't want to overwrite text the user is currently
+        # scrolling/selecting in, so we only append new content when
+        # the file grew, and replace everything when it shrank (clear).
+        path = log.log_path()
+        try:
+            size = os.path.getsize(path)
+            mtime = os.path.getmtime(path)
+        except OSError:
+            self.text.setPlainText("")
+            self._last_mtime = None
+            return
+
+        prev_size = self._last_size if hasattr(self, "_last_size") else -1
+        if prev_size < 0 or size < prev_size:
+            # First load or file shrank (e.g. user clicked Clear).
+            self.text.setPlainText(log.tail_text())
+        else:
+            # File grew: read only the new bytes and append.
+            try:
+                with open(path, "rb") as fh:
+                    fh.seek(prev_size)
+                    new = fh.read(size - prev_size)
+                if new:
+                    cursor = self.text.textCursor()
+                    at_end = (
+                        cursor.atEnd()
+                        or self.text.toPlainText() == ""
+                    )
+                    self.text.moveCursor(self.text.textCursor().End)
+                    self.text.insertPlainText(new.decode("utf-8", errors="replace"))
+                    if at_end:
+                        self.text.moveCursor(self.text.textCursor().End)
+            except OSError:
+                pass
+
+        self._last_size = size
+        self._last_mtime = mtime
 
     def _check_log_file(self):
         report = log.check_log_file()
@@ -273,6 +350,10 @@ class LogsTab(TabPage):
         if ret != QMessageBox.StandardButton.Yes:
             return
         if log.clear():
+            # Force a full reload (file shrank to zero).
+            if hasattr(self, "_last_size"):
+                self._last_size = -1
+            self._last_mtime = None
             self._refresh_text()
             self.findings_label.setText("Log cleared.")
 

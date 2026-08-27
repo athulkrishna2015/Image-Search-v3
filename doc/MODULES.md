@@ -139,11 +139,23 @@ DuckDuckGo via the hidden `i.js` endpoint. **Undocumented, may break.**
 | Symbol | Purpose |
 | --- | --- |
 | `_DDG_SEARCH_URL`, `_DDG_IMAGE_API_URL` | Endpoints. |
-| `_HEADERS` | Browser-like headers (incl. `Referer` and `Origin`). |
+| `_HEADERS` | Browser-like headers (incl. `Referer` and `Origin`). The `User-Agent` is a Linux Chrome build because DDG has been observed to return 403 for Windows UAs. |
 | `_request_with_retry(url, params, …)` | GET with timeout + exponential backoff. |
 | `_get_vqd(q, …)` | Extract the CSRF-like `vqd` token from the HTML of the search page. |
 | `get_ddg_images(q)` | Two-step: fetch `vqd`, then hit `i.js`, return `result[].image`. |
 | `getddgimages` | Backwards-compatible alias. |
+
+## `addon/bing_images.py`
+
+Bing Images via the undocumented `/images/async` endpoint. **No API
+key required.**
+
+| Symbol | Purpose |
+| --- | --- |
+| `_BING_URL` | `https://www.bing.com/images/async`. |
+| `_HEADERS` | Linux Chrome User-Agent (Windows UAs return a JS-only page); standard `Accept`/`Accept-Language`/`Referer`. |
+| `_MURL_RE` | Regex for `&quot;murl&quot;:&quot;…&quot;` (HTML-escaped URLs). |
+| `get_bing_images(q)` | `GET /images/async?q=…&first=1&count=20`, then extract + dedupe `murl` values. Returns `[]` on any error after retries. |
 
 ## `addon/ui_editor.py`
 

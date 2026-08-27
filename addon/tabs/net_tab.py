@@ -39,6 +39,7 @@ class NetworkTab(TabPage):
 
         self.provider_combo = QComboBox(prov_group)
         self.provider_combo.addItem("Yandex", "yandex")
+        self.provider_combo.addItem("Bing", "bing")
         self.provider_combo.addItem("DuckDuckGo (hidden API)", "duckduckgo")
         self.provider_combo.addItem("Google (Custom Search)", "google")
         self.provider_combo.currentIndexChanged.connect(self._on_dirty)

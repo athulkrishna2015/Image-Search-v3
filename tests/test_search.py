@@ -12,7 +12,7 @@ def _make_module(name, **attrs):
     return mod
 
 
-def _load_search(config, ddg_results=None, yandex_results=None, google_results=None, strip_fn=None):
+def _load_search(config, ddg_results=None, yandex_results=None, google_results=None, bing_results=None, strip_fn=None):
     # Clear prior stubs/modules
     for name in [
         "addon.search",
@@ -20,6 +20,7 @@ def _load_search(config, ddg_results=None, yandex_results=None, google_results=N
         "addon.yimages",
         "addon.gimages",
         "addon.ddg_hidden_test",
+        "addon.bing_images",
         "addon",
         "anki",
         "anki.utils",
@@ -59,6 +60,10 @@ def _load_search(config, ddg_results=None, yandex_results=None, google_results=N
         calls["google"] = q
         return list(google_results or [])
 
+    def _bing(q):
+        calls["bing"] = q
+        return list(bing_results or [])
+
     sys.modules["addon.ddg_hidden_test"] = _make_module(
         "addon.ddg_hidden_test", get_ddg_images=_ddg, getddgimages=_ddg
     )
@@ -66,6 +71,9 @@ def _load_search(config, ddg_results=None, yandex_results=None, google_results=N
         "addon.yimages", get_yimages=_yandex, getyimages=_yandex
     )
     sys.modules["addon.gimages"] = _make_module("addon.gimages", getgimages=_google)
+    sys.modules["addon.bing_images"] = _make_module(
+        "addon.bing_images", get_bing_images=_bing
+    )
 
     # Load addon.search without executing addon/__init__.py
     search_path = repo_root / "addon" / "search.py"

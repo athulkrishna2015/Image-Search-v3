@@ -94,7 +94,18 @@ def parse_yimages_response(response):
             item_json = json.loads(raw)
         except Exception:
             continue
-        thumb = item_json.get("thumb") or {}
+        # The captured snippet is wrapped as {"serp-item":{...}}. The
+        # actual image fields (thumb, href, ...) live inside the nested
+        # "serp-item" object. Fall back to the outer dict for older
+        # Yandex payloads where the snippet might be a flat object.
+        nested = item_json.get("serp-item")
+        if isinstance(nested, dict):
+            inner = nested
+        elif isinstance(item_json, dict):
+            inner = item_json
+        else:
+            continue
+        thumb = inner.get("thumb") or {}
         url = thumb.get("url")
         if not url:
             continue

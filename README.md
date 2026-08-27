@@ -6,7 +6,7 @@ Image Search v3 is a powerful Anki add-on that lets you quickly find and add ima
 
 ## Features
 
-- **Image provider**: Yandex (default), DuckDuckGo (hidden API), or Google Custom Search (images). When using Google, enter your API key and CSE ID (cx) under Tools → Image Search v3 Settings → Network. [Requires both key and cx] [searchType=image].
+- **Image provider**: Yandex (default, no key), Bing (no key), DuckDuckGo (hidden API, no key), or Google Custom Search (images). When using Google, enter your API key and CSE ID (cx) under Tools → Image Search v3 Settings → Network. [Requires both key and cx] [searchType=image].
 - **Per-Note-Type Configuration**: Configure different query and image fields for each of your note types.
 - **Smart replace**: only replaces prior images inserted by this add‑on (class "imgsearch"), preserving user text and other content; appends when no prior add‑on image exists. 
 - **Graphical Settings Panel**: An easy-to-use settings panel to manage your configuration. No more manual file editing!
@@ -65,9 +65,10 @@ There are three ways to search for an image in the card editor:
 ## Provider notes
 
 - Yandex: no‑auth, undocumented JSON endpoint used by the front‑end; works well but may change, be geo‑restricted, or rate‑limited without prior notice.
-- DuckDuckGo: hidden `i.js` endpoint (no API key); works best‑effort and may change, rate‑limit, or block without notice. Falls back to Yandex if no results.
+- Bing: no‑auth, undocumented `/images/async` endpoint that returns ~30–50 results per query. No JavaScript rendering required; we extract the `murl` field from the response HTML.
+- DuckDuckGo: hidden `i.js` endpoint (no API key); works best‑effort and may change, rate‑limit, or block without notice. A Linux Chrome User-Agent is required because DDG returns 403 for some Windows UAs. Falls back to Yandex if no results.
 - Google: official Custom Search JSON API with searchType=image; requires both [API key](https://console.cloud.google.com/apis/library/customsearch.googleapis.com?hl=en-GB) and [CSE (Google Search Engine) ID (cx)](https://programmablesearchengine.google.com/) and enforces quotas and billing on your account. 
-- Routing: when provider is Google or DuckDuckGo, results are fetched first and transparently fall back to Yandex if empty, preserving the editing flow.
+- Routing: when provider is Bing, Google, or DuckDuckGo, results are fetched first and transparently fall back to Yandex if empty, preserving the editing flow.
 
  If you don't know how to get the API please read this: [google custom-search](https://programmablesearchengine.google.com/)
 
@@ -107,14 +108,17 @@ modules, JSON keys, errors, build, security, testing) lives under
   modals; Yandex parser accepts both `data-bem` quote styles and
   protocol-relative thumb URLs; stale `query_fields: ["Front"]`
   default removed.
-- **Next** — Supporter opt-out checkbox in the Support tab; the
-  Support tab opens automatically the next time you open the settings
-  dialog after an add-on update (lazy, no Anki startup cost).
-  Controlled by the new `auto_show_support_on_update` config key
-  (default `true`). The settings dialog is now non-modal so the Anki
-  main window stays usable while it's open. The Logs tab gained a
-  "Check log file" button (scans for known error patterns) and a
-  "Clear log on add-on startup" checkbox (default on).
+- **Next** — Added a new keyless Bing provider (via
+  `/images/async`, no key, ~30–50 results per query); selectable in
+  the Network tab. Fixed the Yandex parser so it drills into the
+  nested `serp-item` object (previously returned 0 URLs for all
+  queries). Updated the DuckDuckGo User-Agent to a Linux Chrome
+  build (DDG returns 403 for some Windows UAs). The Logs tab now
+  has all controls at the top and auto-refreshes as new lines are
+  logged. The settings dialog is non-modal so the Anki main window
+  stays usable while it's open. The Logs tab gained a "Check log
+  file" button (scans for known error patterns) and a "Clear log on
+  add-on startup" checkbox (default on).
 - **3.11.2 (2026-03-27)** — Ko-fi support widget; UPI / BTC / ETH QR
   codes on the Support tab.
 - **3.11.0 (2026-03-17)** — DuckDuckGo (hidden API) provider; emoji

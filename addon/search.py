@@ -24,6 +24,12 @@ try:
 except Exception:
     _get_ddg = None
 
+# Bing provider (keyless) is optional
+try:
+    from .bing_images import get_bing_images as _get_bing
+except Exception:
+    _get_bing = None
+
 # Cache of image URL lists per query
 RESULTS: dict[str, list[str]] = {}
 
@@ -47,6 +53,8 @@ def _provider_label_from_config() -> str:
         return "DuckDuckGo"
     if provider == "google":
         return "Google"
+    if provider == "bing":
+        return "Bing"
     return "Yandex"
 
 
@@ -81,6 +89,16 @@ def _provider_results_and_label(q: str) -> tuple[list[str], str]:
     provider = (cfg.get("provider") or "yandex").lower()
     fallback_on = bool(cfg.get("google_fallback_to_yandex", True))
     log.debug("provider routing: provider=%s fallback=%s query=%r", provider, fallback_on, q)
+
+    if provider == "bing":
+        if _get_bing:
+            urls = _get_bing(q)
+            if urls:
+                return urls, "Bing"
+        if fallback_on:
+            log.info("Bing provider unavailable or empty; falling back to Yandex for %r", q)
+            return _get_yandex(q), "Yandex (fallback from Bing)"
+        return [], "Bing"
 
     if provider in ("duckduckgo", "ddg"):
         if _get_ddg:

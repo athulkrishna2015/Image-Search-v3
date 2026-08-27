@@ -1,10 +1,10 @@
 # Image Providers
 
-Image Search v3 ships with three providers. The active one is chosen
-by the `provider` config key (`"yandex"`, `"duckduckgo"` / `"ddg"`,
-or `"google"`). All three share the same retry / timeout / backoff
-settings (see [CONFIG.md](CONFIG.md)) and all three return a
-`list[str]` of absolute image URLs.
+Image Search v3 ships with four providers. The active one is chosen
+by the `provider` config key (`"yandex"`, `"bing"`,
+`"duckduckgo"` / `"ddg"`, or `"google"`). All four share the same
+retry / timeout / backoff settings (see [CONFIG.md](CONFIG.md)) and
+all four return a `list[str]` of absolute image URLs.
 
 ## Yandex (default)
 
@@ -14,12 +14,28 @@ settings (see [CONFIG.md](CONFIG.md)) and all three return a
 - **Response:** JSON with `blocks[0].html` containing the rendered
   result list. Each result is an inline `data-bem='{…serp-item…}'`
   (or `data-bem="…"` in newer Yandex markup) JSON snippet.
-- **Parser notes:** we extract every `data-bem` attribute whose value
-  contains `"serp-item"`, decode the JSON, and pull `thumb.url`. The
-  returned URL is protocol-relative (`//avatars.example/...`); we
-  prepend `https:`.
+- **Parser notes:** the snippet is wrapped as
+  `{"serp-item": {…,"thumb":{"url":"…"},…}}`. We drill into the
+  nested `serp-item` object to extract `thumb.url`. Protocol-relative
+  URLs (`//avatars.example/...`) are made absolute with `https:`.
 - **Caveats:** undocumented. Yandex may geo-restrict, change markup
   without notice, or rate-limit.
+
+## Bing (keyless)
+
+- **Endpoint:** `https://www.bing.com/images/async`
+- **Auth:** none.
+- **Request shape:** `GET /images/async?q=<URL-encoded query>&first=1&count=20`
+- **Response:** HTML page with image results embedded as JSON inside
+  `<script>` tags. The original image URLs are available as
+  `&quot;murl&quot;:&quot;…&quot;` (HTML-escaped).
+- **Parser notes:** we extract every `&quot;murl&quot;:&quot;…&quot;`
+  occurrence, decode the entities, and dedupe. No JavaScript
+  rendering required.
+- **Caveats:** undocumented public endpoint; works without a key
+  but Bing does not promise long-term stability. A modern Linux
+  Chrome User-Agent is required (Windows UAs have been observed to
+  return a JS-only page). Returns ~30–50 results per query.
 
 ## DuckDuckGo (hidden API)
 
@@ -32,9 +48,11 @@ settings (see [CONFIG.md](CONFIG.md)) and all three return a
   1. `GET /?q=<query>` → extract `vqd` from the HTML.
   2. `GET /i.js?q=<query>&vqd=<token>&o=json` → JSON with
      `results[].image` URLs.
-- **Caveats:** undocumented. Will return HTTP 202/403 if rate-limited
-  or blocked. On any non-2xx the request is retried with backoff;
-  after that we return `[]` and the caller falls back to Yandex.
+- **Caveats:** undocumented. DDG aggressively blocks Windows
+  User-Agents with 403 on the hidden `i.js` endpoint; a modern
+  Linux Chrome UA works reliably. May also geo-block on shared
+  IPs. On any non-2xx the request is retried with backoff; after
+  that we return `[]` and the caller falls back to Yandex.
 
 ## Google Custom Search (JSON API)
 
@@ -65,7 +83,8 @@ based on `google_fallback_to_yandex`:
 | Provider | Returns non-empty | Returns empty | Provider missing |
 | --- | --- | --- | --- |
 | `yandex` | Yandex | Yandex (empty) | n/a |
-| `duckduckgo` / `ddg` | DuckDuckGo | Yandex (fallback) | n/a |
+| `bing` | Bing | Yandex (fallback) | Yandex (fallback) |
+| `duckduckgo` / `ddg` | DuckDuckGo | Yandex (fallback) | Yandex (fallback) |
 | `google` with fallback **on** | Google | Yandex (fallback) | Yandex (fallback) |
 | `google` with fallback **off** | Google | Google (empty) | Google (empty) |
 

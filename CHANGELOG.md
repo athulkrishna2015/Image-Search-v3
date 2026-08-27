@@ -13,45 +13,77 @@ Releases on GitHub: <https://github.com/athulkrishna2015/Image-Search-v3/release
 
 ## [Unreleased]
 
+### Added
+- **Bing provider (keyless)** via the undocumented `/images/async`
+  endpoint. No API key required; returns ~30–50 results per query by
+  extracting `murl` values from the response HTML. Selectable as
+  `provider = "bing"` in the Network tab; falls back to Yandex on
+  empty results.
+- Logs tab "live update" toggle: the text area auto-refreshes
+  whenever the log file's mtime changes (1.5s poll). Disabling the
+  toggle stops the poll and keeps the view static. New content is
+  appended without overwriting the user's current view; "Clear log"
+  forces a full reload.
+- Logs tab restructured so all controls (path, log level, debug
+  toggle, maintenance checkboxes, all action buttons, live-update
+  toggle, findings label, help) are at the top; the text area is at
+  the bottom and takes the remaining space.
+- `clear_logs_on_startup` config key (default `true`). When enabled,
+  the add-on truncates the log file on every Anki session start.
+  Wired in `addon/__init__.setup()`.
+- `auto_show_support_on_update` config key (default `true`). When
+  the add-on version changes, the Support tab is auto-focused the
+  next time the user opens the settings dialog (lazy, no Anki
+  startup cost). Disabled by ticking **"I have supported this
+  addon"** in the Support tab, which is stored in `meta.json`.
+
 ### Changed
-- Network image downloads now share the same retry/backoff settings as the
-  search providers (previously a single transient failure aborted the
-  download with no retry).
-- Per-note-type warning dialogs are throttled so a misconfigured note type no
-  longer spams the user on every search.
-- The provider dropdown now uses only its `objectName` for duplicate
-  detection (Anki menu language no longer affects re-install detection).
+- Settings dialog is now **non-modal**: opening it does not block
+  the Anki main window. A single live instance is kept so re-opening
+  the menu re-focuses the existing window instead of stacking a new
+  one. `WA_DeleteOnClose` + `closeEvent` wired to the cancel handler
+  so the X button discards unsaved per-note-type changes.
+- Logs tab "Live update" enabled by default.
 
 ### Fixed
-- `editor.loadNote()` is no longer called on smart-replace, preserving the
-  editor's cursor position, focus, and undo stack.
-- The `last_query` cache is now stored on the editor instance instead of a
-  module-level global, so multiple editor windows do not interfere with
-  each other's previous/next navigation.
-- `next`/`prev` now refresh LRU recency so the query you are browsing does
-  not get evicted from the in-memory cache.
-- `mkstemp` filename prefixes are sanitized, preventing `ValueError` from
-  reaching the user when a provider returns a URL with unexpected characters.
-- `media.addFile` is called with `force_copy=True` when the running Anki
-  supports it, so the downloaded temp file is always safe to delete
-  afterwards.
-- `image_tag` HTML-escapes the `src` value.
-- A global `query_fields: ["Front"]` default that fired a modal on every
-  search for non-Cloze note types has been removed from `config.json` and
-  `manifest.json`.
-- Yandex response parser now accepts both `data-bem='{...}'` (single quotes)
-  and `data-bem="{...}"` (double quotes), and resolves protocol-relative
+- **Yandex parser** was looking for `thumb.url` on the outer
+  `data-bem` object (`{"serp-item":{...}}`) but the snippet wraps
+  the actual fields inside the nested `serp-item` object. Fixed
+  to drill into `serp-item` first, with a flat-object fallback for
+  older payloads. Restores all 30 image URLs per query (was 0).
+- **DuckDuckGo User-Agent** updated from `Windows NT 10.0` Chrome
+  to `X11; Linux x86_64` Chrome. DDG has been observed to return
+  403 for the Windows UA on the hidden `i.js` endpoint; the Linux
+  UA is accepted across the network. (Yandex and Bing headers
+  updated to the same Linux UA for consistency.)
+- The Logs tab "Clear log" button no longer leaves a stale
+  view: it now resets the cached file size and re-renders from
+  scratch.
+- Yandex parser accepts both `data-bem='{...}'` (single quotes) and
+  `data-bem="{...}"` (double quotes), and resolves protocol-relative
   thumbnail URLs (`//avatars.example/...`).
 
 ### Security
-- `addon/meta.json` (auto-managed by Anki, can contain user credentials)
-  was already in `.gitignore`; verified it is not in any branch's history.
-  The Google API key rotation policy is documented in `doc/SECURITY.md`.
+- `addon/meta.json` (auto-managed by Anki, can contain user
+  credentials) was already in `.gitignore`; verified it is not in
+  any branch's history.
 
 ### Tests
-- Added `tests/test_utils.py` (15 new tests) covering URL extension
+- Added `tests/test_utils.py` (15 tests) covering URL extension
   inference, image tag escaping, prefix sanitization, smart-replace
   behavior, and the LRU-on-nav semantics.
+- Added `tests/test_logger.py` (9 tests) covering logger levels,
+  filtering, file creation, clear, tail truncation, missing file.
+- Added `tests/test_log_all_and_supporter.py` (8 tests) covering
+  the `all` level (lowest), UnboundLocalError regression in
+  `tail_text`, and defensive write of supporter opt-out.
+- Added `tests/test_log_check_and_clear.py` (13 tests) covering
+  the log health scanner and the non-modal-dialog AST inspection.
+- Added `tests/test_bump_and_update.py` (16 tests) for the build
+  script and the update-check helpers.
+- Added `tests/test_yandex_fix_and_bing.py` (12 tests) for the
+  Yandex parser regression, the Bing provider extractor, and the
+  Bing search-routing primary + fallback paths.
 
 ---
 

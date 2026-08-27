@@ -28,6 +28,11 @@ tests/
 │                                truncation, clear-on-startup default/off/
 │                                enabled/missing-file, non-modal dialog
 │                                AST inspection
+├── test_yandex_fix_and_bing.py
+│                             ← Yandex parser regression (drill into
+│                                serp-item), Bing provider extractor
+│                                (murl, dedup, retry), search routing for
+│                                provider=bing (primary + fallback)
 ├── test_bump_and_update.py   ← bump.py: validate / increment / sync / read /
                                  bump_version; update_check: should_show /
                                  mark_welcomed, opt-out, disabled, no-startup-
