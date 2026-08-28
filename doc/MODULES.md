@@ -18,6 +18,12 @@ dialog construction — never at module import or Anki startup — so
 opening the settings dialog is the only place that pays for the
 check.
 
+In a normal Anki install, `addonManager.addonMeta` and
+`writeAddonMeta` use the numeric package id `178037783`. In a source
+checkout or symlinked dev tree, the loaded package name is often
+`addon`, so `update_check` falls back to local `addon/meta.json`
+reads and writes when the package is not numeric.
+
 | Symbol | Purpose |
 | --- | --- |
 | `current_version()` | Read the version string from `addon/manifest.json`. |
@@ -201,7 +207,7 @@ is split into one file per tab under `addon/tabs/`.
 | `SettingsDialog` | `QDialog` that owns the four tab widgets and a status label. |
 | `SettingsDialog._save_only` | Pulls state from every tab into `self.config`, strips legacy keys, writes via `addonManager.writeConfig`. |
 | `SettingsDialog._save_and_close` | Save + `accept()`. |
-| `settings_dialog()` | Construct + `exec()`. |
+| `settings_dialog()` | Construct + `show()`; the dialog is non-modal and re-focuses the existing window if already open. |
 | `init_menu()` | Idempotent: add the Tools entry. |
 
 ## `addon/tabs/`

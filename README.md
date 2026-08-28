@@ -101,27 +101,6 @@ releases). Contributor and maintainer documentation (architecture,
 modules, JSON keys, errors, build, security, testing) lives under
 [doc/](./doc/).
 
-### Latest changes (summary)
-
-- **3.12.0 (2026-08-28)** — global fallback routing now tries any
-  configured provider after any other provider returns no results or
-  errors; update-check metadata persistence now works in both Anki
-  installs and development symlink checkouts; packaging and release
-  docs updated for the 3.12.0 release.
-- **3.11.2 (2026-03-27)** — Ko-fi support widget; UPI / BTC / ETH QR
-  codes on the Support tab.
-- **3.11.0 (2026-03-17)** — DuckDuckGo (hidden API) provider; emoji
-  toolbar labels; build scripts enforce `3.<major>.<minor>`.
-- **3.9.0 (2026-02-24)** — secure TLS; hardened network config
-  parsing; bounded LRU cache; idempotent hook/menu registration;
-  fixed settings dialog dirty-state handling.
-- **3.8.6 (2025-11-04)** — Google Custom Search (images) provider
-  with fallback; per-network-tab settings; image extension inferred
-  from URL; multi-host offline check.
-- **3.6.x (2025-10-31)** — Smart Replace; offline-aware media
-  downloads with structured error codes; per-note-type settings
-  dialog; safer field resolution.
-
 ## License
 
 This add-on is a modification of the work of original authors. Credit goes to the creators of [Anki Image Search v2](https://ankiweb.net/shared/info/432495333) and [Image Search](https://ankiweb.net/shared/info/885589449).

@@ -8,8 +8,11 @@ is only one logical instance.**
 ## `addon/update_check.py`
 
 No module-level state. All access to `meta.json` is via
-`mw.addonManager.addonMeta` / `writeAddonMeta`, so the canonical
-state lives in `addon/meta.json` (gitignored, Anki-managed):
+`mw.addonManager.addonMeta` / `writeAddonMeta` when the add-on is
+loaded under its numeric package id. In a source checkout or symlink
+dev tree, the helper falls back to local `addon/meta.json` reads and
+writes, so the state remains consistent without noisy metadata
+errors:
 
 | Key | Type | Set by | Read by |
 | --- | --- | --- | --- |
@@ -25,6 +28,7 @@ state lives in `addon/meta.json` (gitignored, Anki-managed):
 | `LOGGER_NAME` | `str` | process | constant | `"image_search_v3"`. |
 | `_DEFAULT_MAX_BYTES` | `int` | process | constant | 512 KiB. |
 | `_DEFAULT_BACKUP_COUNT` | `int` | process | constant | 3 (`image_search_v3.log.1` / `.2` / `.3`). |
+| `_DEFAULT_LEVEL` | `str` | process | constant | `"info"`. |
 | `_AddonLogger._logger` | `logging.Logger` | process | add-on import | stdlib logger; lazily attaches a `RotatingFileHandler` on first call. |
 | `_AddonLogger._handler` | `RotatingFileHandler` or `None` | process | until add-on reload | Attached on first call. |
 | `_AddonLogger._current_level_name` | `str` | process | until add-on reload | Mirrors the in-memory level; updated by `set_level`. |

@@ -13,6 +13,14 @@ Releases on GitHub: <https://github.com/athulkrishna2015/Image-Search-v3/release
 
 ## [3.12.0] — 2026-08-28
 
+### Latest changes (summary)
+
+- **3.12.0 (2026-08-28)** — global fallback routing now tries any
+  configured provider after any other provider returns no results or
+  errors; update-check metadata persistence now works in both Anki
+  installs and development symlink checkouts; packaging and release
+  docs updated for the 3.12.0 release.
+
 ### Changed
 - Global fallback routing now tries any configured provider after any
   other provider returns no results or errors, instead of only

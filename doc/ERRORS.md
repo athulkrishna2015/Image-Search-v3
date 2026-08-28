@@ -51,7 +51,7 @@ show.
 The add-on uses `aqt.utils.tooltip` and `aqt.utils.showWarning` for
 the user. For developer visibility, every call path also writes to
 `addon/logs/image_search_v3.log` (a rotating file, 512 KiB × 3
-backups). Levels:
+backups). The logger name is `image_search_v3`. Levels:
 
 | Level | Used for |
 | --- | --- |

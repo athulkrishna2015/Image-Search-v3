@@ -94,7 +94,7 @@ and three different image search providers.
    - `append` / `prepend`: append/prepend the new tag, then call
      `editor.loadNote()` to refresh the view.
 8. **Settings dialog** — opening it via the Tools menu constructs
-   `SettingsDialog` and `exec()`s it. The dialog:
+   `SettingsDialog` and shows it non-modally. The dialog:
    - Builds one widget per tab (NoteTypes / Network / Logs / Support).
    - Calls `update_check.should_show_support_welcome(self.config)`. If
      the add-on was updated since the user was last welcomed (and the

@@ -80,14 +80,17 @@ The fastest way to iterate is to symlink `addon/` directly into
 Anki's add-ons folder so edits show up after restarting Anki (or
 "Reload" via **Tools → Add-ons**).
 
-**Important:** name the symlink after the **package id**
-(`178037783`), not after the project. Anki resolves
-`addonManager.addonMeta` and `writeAddonMeta` by package id, so a
-symlink named e.g. `image_search_v3_dev` causes those calls to look
-for `meta.json` in a separate `addons21/178037783/` folder that
-does not exist. The add-on catches that failure silently (see
-`SupportTabMixin.on_supporter_check_toggled`), but persistence of
-preferences like the supporter opt-out will not work.
+**Important:** for best compatibility, name the symlink the same way
+Anki loads the add-on package in that environment. If the checkout is
+mounted as `addon`, Anki will use `addonManager.addonMeta("addon")`
+and `writeAddonMeta("addon", …)`. If you install the zip into the
+normal Anki add-ons folder, the package id is `178037783` and the
+numeric path is used instead.
+
+The helper functions in `addon/update_check.py` now tolerate both
+forms: they prefer Anki-managed metadata when the package name is
+numeric, and fall back to local `addon/meta.json` reads/writes in a
+development checkout so the logs stay quiet.
 
 **Linux / macOS:**
 
