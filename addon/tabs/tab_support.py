@@ -134,7 +134,6 @@ class SupportTabMixin:
 
         self.load_supporter_state()
         return self.support_tab
-
     def load_supporter_state(self):
         try:
             meta = mw.addonManager.addonMeta(ADDON_PACKAGE)

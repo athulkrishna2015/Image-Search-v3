@@ -95,15 +95,24 @@ class SettingsDialog(QDialog, SupportTabMixin):
         self.nt_tab = NoteTypesTab(self.config, on_dirty=self._mark_dirty, parent=self)
         self.net_tab = NetworkTab(self.config, on_dirty=self._mark_dirty, parent=self)
         # Support tab is built by the mixin; it uses mw.addonManager.addonMeta
-        # so the supporter-opt-out checkbox is wired in.
+        # so the supporter-opt-out checkbox is wired in. Wrap the inner
+        # widget in a QScrollArea so the whole tab scrolls when the
+        # dialog is shorter than the tab content (the inner QR list
+        # also has its own QScrollArea - we use single-shot resizable
+        # behavior at both levels).
         self.support_tab = self._create_support_tab()
+        from aqt.qt import QScrollArea
+        support_scroll = QScrollArea(self)
+        support_scroll.setWidgetResizable(True)
+        support_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        support_scroll.setWidget(self.support_tab)
         # Logs is the LAST tab on purpose. The log viewer is lazy (no disk
         # read until Refresh is clicked) so it does not slow dialog open.
         self.log_tab = LogsTab(self.config, on_dirty=self._mark_dirty, parent=self)
 
         self.tabs.addTab(self.nt_tab, self.nt_tab.title)
         self.tabs.addTab(self.net_tab, self.net_tab.title)
-        self.tabs.addTab(self.support_tab, "Support")
+        self.tabs.addTab(support_scroll, "Support")
         self.tabs.addTab(self.log_tab, self.log_tab.title)
         self.tabs.setCurrentWidget(self.nt_tab)
         # Lazy-load the log when the user actually focuses the Logs tab.
@@ -145,7 +154,10 @@ class SettingsDialog(QDialog, SupportTabMixin):
         # 'clear_logs_on_startup' / 'check_log_file' in place; nothing
         # extra to do here.
 
-        for legacy in ("query_field", "query_fields", "image_field", "search_engine"):
+        for legacy in (
+            "query_field", "query_fields", "image_field",
+            "search_engine", "google_fallback_to_yandex",
+        ):
             self.config.pop(legacy, None)
 
         try:

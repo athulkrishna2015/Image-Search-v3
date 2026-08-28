@@ -242,13 +242,16 @@ class SearchRoutingBingTests(unittest.TestCase):
         )
         url = search.getresultbyquery("nebula")
         self.assertEqual(url, "b1")
-        self.assertEqual(search.get_provider_label("nebula"), "Bing")
+        self.assertEqual(
+            search.get_provider_label("nebula"), "Bing (unofficial)"
+        )
         self.assertEqual(calls.get("bing"), "nebula")
         self.assertNotIn("yandex", calls)
 
     def test_bing_falls_back_to_yandex(self):
+        # Default fallback chain for bing is ("yandex", "duckduckgo").
         search, calls = self._load(
-            {"provider": "bing", "google_fallback_to_yandex": True},
+            {"provider": "bing"},
             bing_results=[],
             yandex_results=["y1"],
         )
@@ -256,7 +259,7 @@ class SearchRoutingBingTests(unittest.TestCase):
         self.assertEqual(url, "y1")
         self.assertEqual(
             search.get_provider_label("planet"),
-            "Yandex (fallback from Bing)",
+            "Yandex (unofficial) (fallback for Bing (unofficial))",
         )
 
 
@@ -280,13 +283,17 @@ class SearchRoutingBraveTests(unittest.TestCase):
         )
         url = search.getresultbyquery("nebula")
         self.assertEqual(url, "br1")
-        self.assertEqual(search.get_provider_label("nebula"), "Brave")
+        self.assertEqual(
+            search.get_provider_label("nebula"), "Brave"
+        )
         self.assertEqual(calls.get("brave"), "nebula")
         self.assertNotIn("yandex", calls)
 
     def test_brave_falls_back_to_yandex(self):
+        # Default fallback chain for brave is
+        # ("yandex", "bing", "duckduckgo").
         search, calls = self._load(
-            {"provider": "brave", "google_fallback_to_yandex": True},
+            {"provider": "brave"},
             brave_results=[],
             yandex_results=["y1"],
         )
@@ -294,12 +301,14 @@ class SearchRoutingBraveTests(unittest.TestCase):
         self.assertEqual(url, "y1")
         self.assertEqual(
             search.get_provider_label("planet"),
-            "Yandex (fallback from Brave)",
+            "Yandex (unofficial) (fallback for Brave)",
         )
 
     def test_brave_no_fallback(self):
+        # Empty chain -> the primary is called once; if it returns [],
+        # the routing stops.
         search, calls = self._load(
-            {"provider": "brave", "google_fallback_to_yandex": False},
+            {"provider": "brave", "fallback_brave": []},
             brave_results=[],
             yandex_results=["y1"],
         )
@@ -336,8 +345,10 @@ class SearchRoutingYandexOfficialTests(unittest.TestCase):
         self.assertNotIn("yandex", calls)
 
     def test_falls_back_to_yandex(self):
+        # Default fallback chain for yandex_official is
+        # ("yandex", "bing", "duckduckgo").
         search, calls = self._load(
-            {"provider": "yandex_official", "google_fallback_to_yandex": True},
+            {"provider": "yandex_official"},
             yandex_official_results=[],
             yandex_results=["y1"],
         )
@@ -345,12 +356,12 @@ class SearchRoutingYandexOfficialTests(unittest.TestCase):
         self.assertEqual(url, "y1")
         self.assertEqual(
             search.get_provider_label("dog"),
-            "Yandex (fallback from Yandex Official)",
+            "Yandex (unofficial) (fallback for Yandex (Official API))",
         )
 
     def test_no_fallback(self):
         search, calls = self._load(
-            {"provider": "yandex_official", "google_fallback_to_yandex": False},
+            {"provider": "yandex_official", "fallback_yandex_official": []},
             yandex_official_results=[],
             yandex_results=["y1"],
         )

@@ -49,8 +49,15 @@ _LIVE_TICK_MS = 1500
 
 class LogsTab(TabPage):
     title = "Logs"
+    # The log text area scrolls internally; adding an outer
+    # QScrollArea would create nested scrolling. The controls above
+    # the text area are small enough to fit.
+    _scroll_body = False
 
     def __init__(self, config: dict, on_dirty, parent=None):
+        # _scroll_body must be set before TabPage.__init__.
+        # TabPage.__init__ reads it on the class, so the class
+        # attribute is enough.
         super().__init__(config, on_dirty, parent)
         self._loaded = False
         self._loading = False

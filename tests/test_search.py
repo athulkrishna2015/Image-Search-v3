@@ -99,6 +99,13 @@ def _load_search(config, ddg_results=None, yandex_results=None, google_results=N
     module = importlib.util.module_from_spec(spec)
     sys.modules["addon.search"] = module
     spec.loader.exec_module(module)
+    # Clear any cached provider resolvers from a previous test in the
+    # same process. _load_search is called per-test; the search module
+    # is reloaded via exec_module but module-level state (notably
+    # _RESOLVER_CACHE) persists on the same module object across
+    # re-runs when sys.modules reuses the entry.
+    if hasattr(module, "_RESOLVER_CACHE"):
+        module._RESOLVER_CACHE.clear()
     return module, calls
 
 
@@ -108,7 +115,10 @@ class SearchProviderTests(unittest.TestCase):
         search, calls = _load_search(config, ddg_results=[], yandex_results=["y1"])
         url = search.getresultbyquery("cats")
         self.assertEqual(url, "y1")
-        self.assertEqual(search.get_provider_label("cats"), "Yandex (fallback from DuckDuckGo)")
+        self.assertEqual(
+            search.get_provider_label("cats"),
+            "Yandex (unofficial) (fallback for DuckDuckGo (unofficial))",
+        )
         self.assertEqual(calls.get("ddg"), "cats")
         self.assertEqual(calls.get("yandex"), "cats")
 
@@ -117,21 +127,28 @@ class SearchProviderTests(unittest.TestCase):
         search, calls = _load_search(config, ddg_results=["d1", "d2"], yandex_results=["y1"])
         url = search.getresultbyquery("nebula")
         self.assertEqual(url, "d1")
-        self.assertEqual(search.get_provider_label("nebula"), "DuckDuckGo")
+        self.assertEqual(
+            search.get_provider_label("nebula"), "DuckDuckGo (unofficial)"
+        )
         self.assertEqual(calls.get("ddg"), "nebula")
         self.assertNotIn("yandex", calls)
 
     def test_google_fallback_label(self):
-        config = {"provider": "google", "google_fallback_to_yandex": True}
+        config = {"provider": "google"}
         search, calls = _load_search(config, google_results=[], yandex_results=["y1"])
         url = search.getresultbyquery("planet")
         self.assertEqual(url, "y1")
-        self.assertEqual(search.get_provider_label("planet"), "Yandex (fallback from Google)")
+        self.assertEqual(
+            search.get_provider_label("planet"),
+            "Yandex (unofficial) (fallback for Google)",
+        )
         self.assertEqual(calls.get("google"), "planet")
         self.assertEqual(calls.get("yandex"), "planet")
 
     def test_google_no_fallback_label(self):
-        config = {"provider": "google", "google_fallback_to_yandex": False}
+        # When the chain is empty, we still call the primary and
+        # return its label even on no results.
+        config = {"provider": "google", "fallback_google": []}
         search, calls = _load_search(config, google_results=[], yandex_results=["y1"])
         url = search.getresultbyquery("planet")
         self.assertIsNone(url)
@@ -139,10 +156,25 @@ class SearchProviderTests(unittest.TestCase):
         self.assertEqual(calls.get("google"), "planet")
         self.assertNotIn("yandex", calls)
 
+    def test_google_legacy_fallback_flag_still_works(self):
+        # Old configs use `google_fallback_to_yandex`. New chains
+        # override it. Verify backwards compat: an old config without
+        # `fallback_google` still falls back to Yandex (since
+        # DEFAULT_FALLBACKS['google'] = ('yandex', 'bing', 'duckduckgo')).
+        config = {"provider": "google", "google_fallback_to_yandex": True}
+        search, calls = _load_search(config, google_results=[], yandex_results=["y1"])
+        url = search.getresultbyquery("planet")
+        self.assertEqual(url, "y1")
+        self.assertIn("google", calls)
+        self.assertIn("yandex", calls)
+
     def test_provider_label_default(self):
         config = {"provider": "yandex"}
         search, _ = _load_search(config)
-        self.assertEqual(search.get_provider_label("anything"), "Yandex")
+        self.assertEqual(
+            search.get_provider_label("anything"),
+            "Yandex (unofficial)",
+        )
 
     def test_clean_query_uses_strip_html(self):
         def strip_html(value):
@@ -193,7 +225,7 @@ class SearchProviderTests(unittest.TestCase):
         """
         After a settings save (which calls clear_cache()), a new search
         must use the freshly-saved provider config, not stale cached
-        results from the old provider.
+        results from the old change.
         """
         # First, prime the cache with the Yandex provider.
         search, calls = _load_search(
@@ -206,18 +238,86 @@ class SearchProviderTests(unittest.TestCase):
         # We can't easily call SettingsDialog._save_only here, but the
         # contract is: clear_cache() + next getresultbyquery reads
         # the current config.
-        import json
         from unittest.mock import patch
 
         # Patch get_config to return the new config
-        new_cfg = {"provider": "ddg", "google_fallback_to_yandex": True}
+        new_cfg = {"provider": "ddg"}
         with patch.object(
             search.utils, "get_config", return_value=new_cfg
         ):
             search.clear_cache()
             url = search.getresultbyquery("q")
         self.assertEqual(url, "d1")
-        self.assertEqual(search.get_provider_label("q"), "DuckDuckGo")
+        self.assertEqual(
+            search.get_provider_label("q"), "DuckDuckGo (unofficial)"
+        )
+
+    def test_per_provider_fallback_chain(self):
+        # Custom chain: when brave returns nothing, fall through to
+        # google and then yandex. Verify the right providers are tried
+        # in order.
+        config = {
+            "provider": "brave",
+            "fallback_brave": ["google", "yandex"],
+        }
+        search, calls = _load_search(
+            config,
+            brave_results=[],
+            google_results=[],
+            yandex_results=["y1"],
+        )
+        url = search.getresultbyquery("cat")
+        self.assertEqual(url, "y1")
+        self.assertIn("brave", calls)
+        self.assertIn("google", calls)
+        self.assertIn("yandex", calls)
+
+    def test_per_provider_fallback_short_circuits(self):
+        # When the first fallback returns a result, the chain stops.
+        config = {
+            "provider": "brave",
+            "fallback_brave": ["google", "yandex"],
+        }
+        search, calls = _load_search(
+            config,
+            brave_results=[],
+            google_results=["g1"],
+            yandex_results=["y1"],
+        )
+        url = search.getresultbyquery("cat")
+        self.assertEqual(url, "g1")
+        self.assertIn("brave", calls)
+        self.assertIn("google", calls)
+        self.assertNotIn("yandex", calls)
+
+    def test_no_fallback_returns_empty_with_primary_label(self):
+        config = {
+            "provider": "brave",
+            "fallback_brave": [],
+        }
+        search, calls = _load_search(
+            config,
+            brave_results=[],
+            yandex_results=["y1"],
+        )
+        url = search.getresultbyquery("cat")
+        self.assertIsNone(url)
+        self.assertIn("brave", calls)
+        self.assertNotIn("yandex", calls)
+
+    def test_fallback_string_legacy_format(self):
+        # A single string instead of a list should still be accepted.
+        config = {
+            "provider": "bing",
+            "fallback_bing": "yandex",  # legacy: single string
+        }
+        search, calls = _load_search(
+            config,
+            bing_results=[],
+            yandex_results=["y1"],
+        )
+        url = search.getresultbyquery("cat")
+        self.assertEqual(url, "y1")
 
 
 if __name__ == "__main__":
