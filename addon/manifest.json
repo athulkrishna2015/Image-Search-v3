@@ -2,7 +2,7 @@
   "package": "178037783",
   "name": "Image Search v3",
   "author": "You",
-  "version": "3.12.0",
+  "version": "3.12.1",
   "homepage": "https://ankiweb.net/shared/info/178037783",
   "mod": 0,
   "min_point_version": 25,
@@ -14,5 +14,5 @@
       "Front"
     ]
   },
-  "human_version": "3.12.0"
+  "human_version": "3.12.1"
 }

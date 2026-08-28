@@ -30,6 +30,8 @@ _MW_MENU_FLAG = "_imgsearchv3_menu_installed"
 # Single live dialog instance so re-opening the menu focuses the existing
 # window instead of stacking a new one.
 _DIALOG_INST: SettingsDialog | None = None
+_UPDATE_WELCOME_SCHEDULED = False
+_UPDATE_WELCOME_DELAY_MS = 1500
 
 
 class SettingsDialog(QDialog, SupportTabMixin):
@@ -102,17 +104,17 @@ class SettingsDialog(QDialog, SupportTabMixin):
         # behavior at both levels).
         self.support_tab = self._create_support_tab()
         from aqt.qt import QScrollArea
-        support_scroll = QScrollArea(self)
-        support_scroll.setWidgetResizable(True)
-        support_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        support_scroll.setWidget(self.support_tab)
+        self.support_scroll = QScrollArea(self)
+        self.support_scroll.setWidgetResizable(True)
+        self.support_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        self.support_scroll.setWidget(self.support_tab)
         # Logs is the LAST tab on purpose. The log viewer is lazy (no disk
         # read until Refresh is clicked) so it does not slow dialog open.
         self.log_tab = LogsTab(self.config, on_dirty=self._mark_dirty, parent=self)
 
         self.tabs.addTab(self.nt_tab, self.nt_tab.title)
         self.tabs.addTab(self.net_tab, self.net_tab.title)
-        self.tabs.addTab(support_scroll, "Support")
+        self.tabs.addTab(self.support_scroll, "Support")
         self.tabs.addTab(self.log_tab, self.log_tab.title)
         self.tabs.setCurrentWidget(self.nt_tab)
         # Lazy-load the log when the user actually focuses the Logs tab.
@@ -130,7 +132,9 @@ class SettingsDialog(QDialog, SupportTabMixin):
         """
         try:
             if update_check.should_show_support_welcome(self.config):
-                self.tabs.setCurrentWidget(self.support_tab)
+                # The tab contains a scroll area; select the direct tab page,
+                # not the widget nested inside that scroll area.
+                self.tabs.setCurrentWidget(self.support_scroll)
                 update_check.mark_support_welcomed()
                 log.info("auto-showed Support tab (post-update welcome)")
         except Exception as exc:
@@ -231,6 +235,38 @@ def settings_dialog():
     _DIALOG_INST.show()
 
 
+def _show_update_welcome():
+    """Open settings once after Anki has finished constructing its window."""
+    try:
+        if not mw or not getattr(mw, "form", None):
+            log.debug("auto-open update welcome skipped: main window is unavailable")
+            return
+        # Do not perform any network or filesystem work unless the cheap
+        # configuration gate says the welcome feature is enabled.
+        config = utils.get_config() or {}
+        if not config.get("auto_show_support_on_update", True):
+            return
+        if update_check.should_show_support_welcome(config):
+            settings_dialog()
+    except Exception as exc:
+        log.warning("auto-open update welcome failed: %r", exc)
+
+
+def _schedule_update_welcome():
+    global _UPDATE_WELCOME_SCHEDULED
+    if _UPDATE_WELCOME_SCHEDULED:
+        return
+    _UPDATE_WELCOME_SCHEDULED = True
+    try:
+        from aqt.qt import QTimer
+        # Defer until the current startup/import work has completed and the
+        # main window can safely host a top-level settings dialog.
+        QTimer.singleShot(_UPDATE_WELCOME_DELAY_MS, _show_update_welcome)
+    except Exception as exc:
+        _UPDATE_WELCOME_SCHEDULED = False
+        log.debug("update welcome scheduling skipped: %r", exc)
+
+
 def init_menu():
     global _MENU_INSTALLED
     if _MENU_INSTALLED or (mw and getattr(mw, _MW_MENU_FLAG, False)):
@@ -250,6 +286,7 @@ def init_menu():
     _MENU_INSTALLED = True
     if mw:
         setattr(mw, _MW_MENU_FLAG, True)
+    _schedule_update_welcome()
 
 
 __all__ = ["SettingsDialog", "settings_dialog", "init_menu", "ADDON_PACKAGE"]

@@ -208,6 +208,8 @@ is split into one file per tab under `addon/tabs/`.
 | `SettingsDialog._save_only` | Pulls state from every tab into `self.config`, strips legacy keys, writes via `addonManager.writeConfig`. |
 | `SettingsDialog._save_and_close` | Save + `accept()`. |
 | `settings_dialog()` | Construct + `show()`; the dialog is non-modal and re-focuses the existing window if already open. |
+| `_schedule_update_welcome()` | Schedule the one-shot post-startup update check 1.5 seconds later, without blocking Anki import. |
+| `_show_update_welcome()` | Open the settings dialog when the current version has not been welcomed; the dialog then selects Support. |
 | `init_menu()` | Idempotent: add the Tools entry. |
 
 ## `addon/tabs/`

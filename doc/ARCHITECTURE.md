@@ -93,8 +93,11 @@ and three different image search providers.
      `editor.loadNote()` so focus/undo are preserved.
    - `append` / `prepend`: append/prepend the new tag, then call
      `editor.loadNote()` to refresh the view.
-8. **Settings dialog** — opening it via the Tools menu constructs
-   `SettingsDialog` and shows it non-modally. The dialog:
+8. **Settings dialog** — after menu setup, a one-shot Qt callback waits
+   1.5 seconds for Anki's main window to finish initializing, then checks
+   for an unwelcome version and opens `SettingsDialog` automatically when
+   needed. Manual opening via the Tools menu uses the same dialog, which
+   is shown non-modally. The dialog:
    - Builds one widget per tab (NoteTypes / Network / Logs / Support).
    - Calls `update_check.should_show_support_welcome(self.config)`. If
      the add-on was updated since the user was last welcomed (and the

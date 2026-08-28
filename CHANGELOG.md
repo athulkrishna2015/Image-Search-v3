@@ -11,15 +11,23 @@ Releases on GitHub: <https://github.com/athulkrishna2015/Image-Search-v3/release
 
 ---
 
-## [3.12.0] — 2026-08-28
+## [3.12.1] — 2026-08-28
 
 ### Latest changes (summary)
 
-- **3.12.0 (2026-08-28)** — global fallback routing now tries any
-  configured provider after any other provider returns no results or
-  errors; update-check metadata persistence now works in both Anki
-  installs and development symlink checkouts; packaging and release
-  docs updated for the 3.12.0 release.
+- **3.12.1 (2026-08-28)** — the post-update settings window now opens
+  automatically after a short delay when Anki finishes starting up,
+  and it selects the Support tab correctly even though the content is
+  wrapped in a scroll area.
+
+### Changed
+- The post-update welcome is deferred by 1.5 seconds after menu setup
+  so it does not slow Anki startup and only runs once the main window
+  is available.
+- The automatic welcome now opens the settings dialog itself, rather
+  than only selecting the Support tab after a manual open.
+- The Support tab selection now targets the direct scroll-area tab,
+  not the inner widget.
 
 ### Changed
 - Global fallback routing now tries any configured provider after any
@@ -265,7 +273,8 @@ Releases on GitHub: <https://github.com/athulkrishna2015/Image-Search-v3/release
 
 ---
 
-[Unreleased]: https://github.com/athulkrishna2015/Image-Search-v3/compare/v3.12.0...HEAD
+[Unreleased]: https://github.com/athulkrishna2015/Image-Search-v3/compare/v3.12.1...HEAD
+[3.12.1]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.12.1
 [3.12.0]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.12.0
 [3.11.2]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.11.2
 [3.11.0]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.11.0
