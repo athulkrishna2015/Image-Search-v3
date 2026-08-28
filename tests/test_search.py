@@ -168,6 +168,25 @@ class SearchProviderTests(unittest.TestCase):
         self.assertIn("google", calls)
         self.assertIn("yandex", calls)
 
+    def test_global_fallback_can_use_any_provider(self):
+        config = {
+            "provider": "google",
+            "fallback_providers": ["brave", "bing"],
+        }
+        search, calls = _load_search(
+            config,
+            google_results=[],
+            brave_results=["br1"],
+            bing_results=["b1"],
+        )
+        self.assertEqual(search.getresultbyquery("planet"), "br1")
+        self.assertEqual(
+            search.get_provider_label("planet"), "Brave (fallback for Google)"
+        )
+        self.assertIn("google", calls)
+        self.assertIn("brave", calls)
+        self.assertNotIn("bing", calls)
+
     def test_provider_label_default(self):
         config = {"provider": "yandex"}
         search, _ = _load_search(config)

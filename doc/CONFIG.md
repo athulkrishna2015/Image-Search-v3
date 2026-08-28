@@ -20,7 +20,7 @@ shape.
 | `google_api_key` | string | `""` | Google Custom Search JSON API key. Only used when `provider == "google"`. |
 | `google_cx` | string | `""` | Google Custom Search Engine ID (`cx`). Only used when `provider == "google"`. |
 | `brave_api_key` | string | `""` | Brave Search API subscription token. Sent as `X-Subscription-Token`. Only used when `provider == "brave"`. |
-| `google_fallback_to_yandex` | bool | `true` | When the Google provider returns no results (or no key is configured), fall back to Yandex. |
+| `fallback_providers` | string[] | all providers | Global ordered fallback providers. When the selected provider returns no results or errors, each configured provider is tried in order. The selected provider is always tried first; an empty list disables fallback. |
 | `request_timeout_s` | float | `10.0` | Per-request timeout in seconds. Clamped to `[1.0, 120.0]`. |
 | `max_retries` | int | `5` | Number of retries after the first attempt (i.e. up to `max_retries+1` total requests). Clamped to `[0, 10]`. |
 | `backoff_base_s` | float | `0.75` | Exponential backoff base in seconds. Sleep before retry `n` is `backoff_base_s * 2 ** n`. Clamped to `[0.05, 10.0]`. |
@@ -38,6 +38,7 @@ shape.
 | `query_fields` (at top level) | Replaced by per-note-type `query_fields`. |
 | `image_field` (at top level) | Replaced by per-note-type `image_field`. |
 | `search_engine` | Replaced by `provider`. |
+| `google_fallback_to_yandex` | Replaced by global `fallback_providers`. |
 
 These are stripped on the next `Save` click in the settings dialog.
 

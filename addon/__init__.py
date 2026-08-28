@@ -30,7 +30,3 @@ def setup() -> None:
 
     init_editor()
     init_menu()
-
-
-# Run on module import (keeps behavior identical to your current file)
-setup()

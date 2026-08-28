@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 from aqt.qt import (
-    QCheckBox,
     QComboBox,
     QDoubleSpinBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QPushButton,
     QSpinBox,
     QVBoxLayout,
     QWidget,
+    Qt,
 )
 
 from ..utils import safe_float, safe_int
@@ -88,15 +90,31 @@ class NetworkTab(TabPage):
         self.google_cx_edit.textChanged.connect(self._on_dirty)
         prov_form.addRow("Google CSE ID (cx):", self.google_cx_edit)
 
-        self.google_fallback_chk = QCheckBox(prov_group)
-        self.google_fallback_chk.setText(
-            "Fallback to Yandex if Google returns no results/errors"
+        self.fallback_list = QListWidget(prov_group)
+        configured = self.config.get("fallback_providers")
+        if configured is None:
+            configured = (
+                "yandex", "yandex_official", "bing", "duckduckgo", "brave", "google"
+            )
+        if isinstance(configured, str):
+            configured = [configured]
+        fallback_options = (
+            ("yandex", "Yandex"),
+            ("yandex_official", "Yandex (Official API)"),
+            ("bing", "Bing"),
+            ("duckduckgo", "DuckDuckGo"),
+            ("brave", "Brave"),
+            ("google", "Google"),
         )
-        self.google_fallback_chk.setChecked(
-            bool(self.config.get("google_fallback_to_yandex", True))
-        )
-        self.google_fallback_chk.toggled.connect(self._on_dirty)
-        prov_form.addRow("Google fallback:", self.google_fallback_chk)
+        for key, label in fallback_options:
+            item = QListWidgetItem(label, self.fallback_list)
+            item.setData(Qt.ItemDataRole.UserRole, key)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(
+                Qt.CheckState.Checked if key in configured else Qt.CheckState.Unchecked
+            )
+        self.fallback_list.itemChanged.connect(self._on_dirty)
+        prov_form.addRow("Fallback providers:", self.fallback_list)
 
         outer.addWidget(prov_group)
 
@@ -156,7 +174,7 @@ class NetworkTab(TabPage):
         self.brave_key_edit.setEnabled(use_brave)
         self.google_key_edit.setEnabled(use_google)
         self.google_cx_edit.setEnabled(use_google)
-        self.google_fallback_chk.setEnabled(use_google)
+        self.fallback_list.setEnabled(True)
 
     def _on_dirty(self, *_):
         self.mark_dirty()
@@ -172,7 +190,11 @@ class NetworkTab(TabPage):
             "request_timeout_s": float(self.timeout_spin.value()),
             "max_retries": int(self.retries_spin.value()),
             "backoff_base_s": float(self.backoff_spin.value()),
-            "google_fallback_to_yandex": bool(self.google_fallback_chk.isChecked()),
+            "fallback_providers": [
+                self.fallback_list.item(i).data(Qt.ItemDataRole.UserRole)
+                for i in range(self.fallback_list.count())
+                if self.fallback_list.item(i).checkState() == Qt.CheckState.Checked
+            ],
         }
 
     def reset_to_default(self):
@@ -185,5 +207,6 @@ class NetworkTab(TabPage):
         self.timeout_spin.setValue(10.0)
         self.retries_spin.setValue(5)
         self.backoff_spin.setValue(0.75)
-        self.google_fallback_chk.setChecked(True)
+        for i in range(self.fallback_list.count()):
+            self.fallback_list.item(i).setCheckState(Qt.CheckState.Checked)
         self._on_dirty()

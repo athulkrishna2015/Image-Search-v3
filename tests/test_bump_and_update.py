@@ -213,6 +213,22 @@ class UpdateCheckTests(unittest.TestCase):
             self.uc.should_show_support_welcome({"auto_show_support_on_update": True})
         )
 
+    def test_mark_support_welcomed_falls_back_to_local_meta(self):
+        import tempfile
+        from unittest.mock import patch
+
+        self._set_version("3.11.3")
+        self._meta.clear()
+        self.uc.mw.addonManager.writeAddonMeta = lambda *_args: (_ for _ in ()).throw(
+            FileNotFoundError(2, "No such file or directory")
+        )
+        with tempfile.TemporaryDirectory() as d:
+            with patch.object(self.uc, "_addon_dir", return_value=Path(d)):
+                with patch.object(self.uc, "current_version", return_value="3.11.3"):
+                    self.uc.mark_support_welcomed()
+            saved = json.loads((Path(d) / "meta.json").read_text(encoding="utf-8"))
+        self.assertEqual(saved["last_support_welcome_version"], "3.11.3")
+
     def test_does_not_touch_startup(self):
         """
         The function only reads the manifest on call; it does not register

@@ -6,7 +6,7 @@ Image Search v3 is a powerful Anki add-on that lets you quickly find and add ima
 
 ## Features
 
-- **Image provider**: Yandex (default, no key), Bing (no key), DuckDuckGo (hidden API, no key), Brave Search API (requires subscription token), or Google Custom Search (images). When using Google, enter your API key and CSE ID (cx) under Tools → Image Search v3 Settings → Network. [Requires both key and cx] [searchType=image]. When using Brave, enter your subscription token under Network.
+- **Image provider**: Yandex (default, no key), Bing (no key), DuckDuckGo (hidden API, no key), Brave Search API (requires subscription token), or Google Custom Search (images). When using Google, enter your API key and CSE ID (cx) under Tools → Image Search v3 Settings → Network. [Requires both key and cx] [searchType=image]. When using Brave, enter your subscription token under Network. Configure a global ordered fallback list to use any provider after any other provider returns no results or errors.
 - **Per-Note-Type Configuration**: Configure different query and image fields for each of your note types.
 - **Smart replace**: only replaces prior images inserted by this add‑on (class "imgsearch"), preserving user text and other content; appends when no prior add‑on image exists. 
 - **Graphical Settings Panel**: An easy-to-use settings panel to manage your configuration. No more manual file editing!
@@ -67,9 +67,9 @@ There are three ways to search for an image in the card editor:
 - Yandex: no‑auth, undocumented JSON endpoint used by the front‑end; works well but may change, be geo‑restricted, or rate‑limited without prior notice.
 - Bing: no‑auth, undocumented `/images/async` endpoint that returns ~30–50 results per query. No JavaScript rendering required; we extract the `murl` field from the response HTML.
 - Brave: first-party Image Search API. Requires a paid plan and the `X-Subscription-Token` header; we use the `properties.url` (original) or `thumbnail.src` (Brave-proxied) fields from the response. Up to 200 results per request.
-- DuckDuckGo: hidden `i.js` endpoint (no API key); works best‑effort and may change, rate‑limit, or block without notice. A Linux Chrome User-Agent is required because DDG returns 403 for some Windows UAs. Falls back to Yandex if no results.
+- DuckDuckGo: hidden `i.js` endpoint (no API key); works best‑effort and may change, rate‑limit, or block without notice. A Linux Chrome User-Agent is required because DDG returns 403 for some Windows UAs. Uses the configured global fallback chain if no results.
 - Google: official Custom Search JSON API with searchType=image; requires both [API key](https://console.cloud.google.com/apis/library/customsearch.googleapis.com?hl=en-GB) and [CSE (Google Search Engine) ID (cx)](https://programmablesearchengine.google.com/) and enforces quotas and billing on your account. 
-- Routing: when provider is Brave, Bing, Google, or DuckDuckGo, results are fetched first and transparently fall back to Yandex if empty, preserving the editing flow.
+- Routing: the selected provider is tried first, then the configured global fallback providers in order, preserving the editing flow when any provider returns no results or errors.
 
  If you don't know how to get the API please read this: [google custom-search](https://programmablesearchengine.google.com/)
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from aqt import mw
@@ -17,25 +18,46 @@ def _addon_dir() -> Path:
 
 def current_version() -> str:
     """Read the add-on's manifest version (e.g. '3.11.2')."""
+    # First try to read from the local addon directory
     manifest = _addon_dir() / "manifest.json"
     try:
         data = json.loads(manifest.read_text(encoding="utf-8"))
+        return str(data.get("version") or "").strip()
     except Exception as exc:
-        log.warning("update_check: manifest read failed: %r", exc)
-        return ""
-    return str(data.get("version") or "").strip()
+        log.debug("update_check: manifest read failed from local dir: %r", exc)
+
+    # If that fails, try to get from Anki's addon manager
+    try:
+        if not mw or not getattr(mw, "addonManager", None):
+            return ""
+        meta = mw.addonManager.addonMeta(ADDON_PACKAGE)
+        if isinstance(meta, dict) and "version" in meta:
+            return str(meta["version"]).strip()
+    except Exception as exc:
+        log.debug("update_check: manifest read failed from addonManager: %r", exc)
+
+    return ""
 
 
 def _get_meta() -> dict:
     """Read this add-on's `meta.json` (Anki-managed per-install state)."""
-    if not mw or not getattr(mw, "addonManager", None):
-        return {}
+    manager_meta = {}
     try:
-        meta = mw.addonManager.addonMeta(ADDON_PACKAGE) or {}
-        return meta if isinstance(meta, dict) else {}
+        if mw and getattr(mw, "addonManager", None):
+            meta = mw.addonManager.addonMeta(ADDON_PACKAGE) or {}
+            if isinstance(meta, dict):
+                manager_meta = meta
     except Exception as exc:
         log.warning("update_check: addonMeta read failed: %r", exc)
-        return {}
+    try:
+        local_meta = json.loads(
+            (_addon_dir() / "meta.json").read_text(encoding="utf-8")
+        )
+        if isinstance(local_meta, dict):
+            return {**local_meta, **manager_meta}
+    except (FileNotFoundError, json.JSONDecodeError, OSError) as exc:
+        log.debug("update_check: local metadata read skipped: %r", exc)
+    return manager_meta
 
 
 def _set_meta(meta: dict) -> None:
@@ -43,8 +65,21 @@ def _set_meta(meta: dict) -> None:
         return
     try:
         mw.addonManager.writeAddonMeta(ADDON_PACKAGE, meta)
+        return
     except Exception as exc:
-        log.warning("update_check: writeAddonMeta failed: %r", exc)
+        log.warning(
+            "update_check: writeAddonMeta failed: %r; using local metadata",
+            exc,
+        )
+
+    try:
+        path = _addon_dir() / "meta.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = path.with_suffix(".json.tmp")
+        temp_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+        os.replace(temp_path, path)
+    except Exception as exc:
+        log.warning("update_check: local metadata write failed: %r", exc)
 
 
 def should_show_support_welcome(config: dict | None) -> bool:

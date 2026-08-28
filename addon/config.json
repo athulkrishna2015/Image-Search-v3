@@ -10,7 +10,7 @@
   "request_timeout_s": 10.0,
   "max_retries": 5,
   "backoff_base_s": 0.75,
-  "fallback_to_yandex": true,
+  "fallback_providers": ["yandex", "yandex_official", "bing", "duckduckgo", "brave", "google"],
   "log_level": "info",
   "log_debug": false,
   "clear_logs_on_startup": true,

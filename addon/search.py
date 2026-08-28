@@ -13,27 +13,14 @@ from .logger import log
 # first-party APIs and require keys) from "unofficial" providers
 # (which use undocumented public endpoints and don't need keys).
 #
-# Per-provider fallback chains are configurable: each provider has
-# `fallback_<key>` config (list of provider keys in fallback order,
-# or a single string for backwards compat). The default chains put
-# the most reliable unofficial provider (Yandex public) last so
-# every chain ultimately reaches it.
+# Fallback providers are configured globally with `fallback_providers`.
+# Legacy per-provider keys remain readable for existing saved configs.
 
 # Public, in the sense that the UI may show them by default.
 _PROVIDER_KEYS = ("yandex", "yandex_official", "bing", "duckduckgo", "brave", "google")
 
-# Default fallback chain for each primary provider. Each chain is
-# the list of provider keys tried in order if the primary returns
-# no results. The last entry is always a keyless unofficial provider
-# so the chain never ends in mid-air.
-DEFAULT_FALLBACKS = {
-    "yandex":          ("bing", "duckduckgo"),
-    "yandex_official": ("yandex", "bing", "duckduckgo"),
-    "bing":            ("yandex", "duckduckgo"),
-    "duckduckgo":      ("yandex", "bing"),
-    "brave":           ("yandex", "bing", "duckduckgo"),
-    "google":          ("yandex", "bing", "duckduckgo"),
-}
+# The default tries every other provider in the order shown in the UI.
+DEFAULT_FALLBACKS = _PROVIDER_KEYS
 
 # Human labels (used for tooltips and routing log messages).
 _PROVIDER_LABELS = {
@@ -123,35 +110,35 @@ def _normalize_provider(key: str) -> str:
 
 def _resolve_fallbacks(cfg: dict, primary: str) -> list[str]:
     """
-    Return the configured fallback chain for `primary`, as a list
-    of provider keys, with `primary` always at the front. Accepts
-    both a list (`fallback_yandex: ["bing", "ddg"]`) and the legacy
-    single string (`fallback_yandex: "bing"`). Falls back to
-    DEFAULT_FALLBACKS when unset / empty.
+    Return the global fallback chain for `primary`, with primary first.
+    Accepts a list or a single string. An explicit empty list disables
+    fallback. Per-provider keys remain supported for old configurations.
 
     The primary is always tried first; the configured list is
     treated as the FALLBACK chain only, never the primary's position.
     """
     primary = _normalize_provider(primary)
-    key = f"fallback_{primary}"
-    value = cfg.get(key)
-    
-    # Check for explicit empty list (meaning no fallbacks)
+    value = cfg.get("fallback_providers")
+    if value is None:
+        value = cfg.get("fallback_provider")
+    if value is None:
+        value = cfg.get(f"fallback_{primary}")
+
     if value == []:
         return [primary]
     
     if value is None or value == "":
-        fallback = list(DEFAULT_FALLBACKS.get(primary, ()))
+        fallback = list(DEFAULT_FALLBACKS)
     elif isinstance(value, str):
         fallback = [_normalize_provider(value)]
     elif isinstance(value, (list, tuple)):
         fallback = [_normalize_provider(v) for v in value
                     if isinstance(v, str) and _normalize_provider(v) != primary]
     else:
-        fallback = list(DEFAULT_FALLBACKS.get(primary, ()))
+        fallback = list(DEFAULT_FALLBACKS)
 
     # Always lead with the primary.
-    return [primary] + [k for k in fallback if k != primary]
+    return [primary] + [k for k in fallback if k in _PROVIDER_KEYS and k != primary]
 
 
 def _provider_label_from_config() -> str:
