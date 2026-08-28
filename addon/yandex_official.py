@@ -158,6 +158,7 @@ def get_yandex_official_images(query: str) -> list[str]:
     )
 
     response_json = None
+    last_exc = None
     for attempt in range(max_retries + 1):
         try:
             r = requests.post(
@@ -180,10 +181,28 @@ def get_yandex_official_images(query: str) -> list[str]:
                 continue
             return []
         except Exception as exc:
+            # Surface the server-side error body so users can
+            # diagnose missing scope / wrong folder id / disabled
+            # API without grepping the Anki console.
+            last_exc = exc
+            body_text = ""
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            try:
+                resp = getattr(exc, "response", None)
+                if resp is not None:
+                    body_text = (resp.text or "")[:500]
+            except Exception:
+                pass
             log.warning(
-                "yandex_official: giving up query=%r err=%r",
-                query, exc,
+                "yandex_official: giving up query=%r err=%r status=%s body=%r",
+                query, exc, status, body_text,
             )
+            if status in (400, 401, 403, 404):
+                # Auth/config error - no point retrying.
+                return []
+            if attempt < max_retries:
+                time.sleep(backoff_base_s * (2 ** attempt))
+                continue
             return []
 
     if not isinstance(response_json, dict):
