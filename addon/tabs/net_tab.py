@@ -39,6 +39,7 @@ class NetworkTab(TabPage):
 
         self.provider_combo = QComboBox(prov_group)
         self.provider_combo.addItem("Yandex", "yandex")
+        self.provider_combo.addItem("Yandex (Official API)", "yandex_official")
         self.provider_combo.addItem("Bing", "bing")
         self.provider_combo.addItem("Brave (Search API)", "brave")
         self.provider_combo.addItem("DuckDuckGo (hidden API)", "duckduckgo")
@@ -51,6 +52,23 @@ class NetworkTab(TabPage):
         if idx != -1:
             self.provider_combo.setCurrentIndex(idx)
         prov_form.addRow("Provider:", self.provider_combo)
+
+        self.yandex_official_key_edit = QLineEdit(prov_group)
+        self.yandex_official_key_edit.setPlaceholderText("Api-Key from AI Studio (yc.search-api.execute scope)")
+        self.yandex_official_key_edit.setText(
+            self.config.get("yandex_api_key", "")
+        )
+        self.yandex_official_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self.yandex_official_key_edit.textChanged.connect(self._on_dirty)
+        prov_form.addRow("Yandex Official API key:", self.yandex_official_key_edit)
+
+        self.yandex_official_folder_edit = QLineEdit(prov_group)
+        self.yandex_official_folder_edit.setPlaceholderText("b1gt6g8ht345********")
+        self.yandex_official_folder_edit.setText(
+            self.config.get("yandex_folder_id", "")
+        )
+        self.yandex_official_folder_edit.textChanged.connect(self._on_dirty)
+        prov_form.addRow("Yandex Cloud folder ID:", self.yandex_official_folder_edit)
 
         self.brave_key_edit = QLineEdit(prov_group)
         self.brave_key_edit.setPlaceholderText("BSA... (Brave Subscription Token)")
@@ -132,6 +150,9 @@ class NetworkTab(TabPage):
         provider = self.provider_combo.currentData()
         use_google = provider == "google"
         use_brave = provider == "brave"
+        use_yandex_official = provider == "yandex_official"
+        self.yandex_official_key_edit.setEnabled(use_yandex_official)
+        self.yandex_official_folder_edit.setEnabled(use_yandex_official)
         self.brave_key_edit.setEnabled(use_brave)
         self.google_key_edit.setEnabled(use_google)
         self.google_cx_edit.setEnabled(use_google)
@@ -143,6 +164,8 @@ class NetworkTab(TabPage):
     def collect(self) -> dict:
         return {
             "provider": self.provider_combo.currentData(),
+            "yandex_api_key": self.yandex_official_key_edit.text().strip(),
+            "yandex_folder_id": self.yandex_official_folder_edit.text().strip(),
             "brave_api_key": self.brave_key_edit.text().strip(),
             "google_api_key": self.google_key_edit.text().strip(),
             "google_cx": self.google_cx_edit.text().strip(),
@@ -154,6 +177,8 @@ class NetworkTab(TabPage):
 
     def reset_to_default(self):
         self.provider_combo.setCurrentIndex(self.provider_combo.findData("yandex"))
+        self.yandex_official_key_edit.setText("")
+        self.yandex_official_folder_edit.setText("")
         self.brave_key_edit.setText("")
         self.google_key_edit.setText("")
         self.google_cx_edit.setText("")

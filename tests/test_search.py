@@ -12,7 +12,7 @@ def _make_module(name, **attrs):
     return mod
 
 
-def _load_search(config, ddg_results=None, yandex_results=None, google_results=None, bing_results=None, brave_results=None, strip_fn=None):
+def _load_search(config, ddg_results=None, yandex_results=None, google_results=None, bing_results=None, brave_results=None, yandex_official_results=None, strip_fn=None):
     # Clear prior stubs/modules
     for name in [
         "addon.search",
@@ -22,6 +22,7 @@ def _load_search(config, ddg_results=None, yandex_results=None, google_results=N
         "addon.ddg_hidden_test",
         "addon.bing_images",
         "addon.brave_images",
+        "addon.yandex_official",
         "addon",
         "anki",
         "anki.utils",
@@ -69,6 +70,10 @@ def _load_search(config, ddg_results=None, yandex_results=None, google_results=N
         calls["brave"] = q
         return list(brave_results or [])
 
+    def _yandex_official(q):
+        calls["yandex_official"] = q
+        return list(yandex_official_results or [])
+
     sys.modules["addon.ddg_hidden_test"] = _make_module(
         "addon.ddg_hidden_test", get_ddg_images=_ddg, getddgimages=_ddg
     )
@@ -81,6 +86,11 @@ def _load_search(config, ddg_results=None, yandex_results=None, google_results=N
     )
     sys.modules["addon.brave_images"] = _make_module(
         "addon.brave_images", get_brave_images=_brave
+    )
+    sys.modules["addon.yandex_official"] = _make_module(
+        "addon.yandex_official",
+        get_yandex_official_images=_yandex_official,
+        getyandexofficial=_yandex_official,
     )
 
     # Load addon.search without executing addon/__init__.py

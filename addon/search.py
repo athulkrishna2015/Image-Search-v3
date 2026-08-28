@@ -12,6 +12,14 @@ try:
 except Exception:
     from .yimages import get_yimages as _get_yandex  # newer file name
 
+# Official Yandex Search API v2 (keyless only by virtue of having
+# the key set; treated as a separate provider here so users can
+# keep using the public JSON endpoint by default).
+try:
+    from .yandex_official import get_yandex_official_images as _get_yandex_official
+except Exception:
+    _get_yandex_official = None
+
 # Google provider is optional
 try:
     from .gimages import getgimages
@@ -63,6 +71,8 @@ def _provider_label_from_config() -> str:
         return "Bing"
     if provider == "brave":
         return "Brave"
+    if provider == "yandex_official":
+        return "Yandex (Official API)"
     return "Yandex"
 
 
@@ -117,6 +127,16 @@ def _provider_results_and_label(q: str) -> tuple[list[str], str]:
             log.info("Brave provider unavailable or empty; falling back to Yandex for %r", q)
             return _get_yandex(q), "Yandex (fallback from Brave)"
         return [], "Brave"
+
+    if provider == "yandex_official":
+        if _get_yandex_official:
+            urls = _get_yandex_official(q)
+            if urls:
+                return urls, "Yandex (Official API)"
+        if fallback_on:
+            log.info("Yandex Official unavailable or empty; falling back to Yandex for %r", q)
+            return _get_yandex(q), "Yandex (fallback from Yandex Official)"
+        return [], "Yandex (Official API)"
 
     if provider in ("duckduckgo", "ddg"):
         if _get_ddg:

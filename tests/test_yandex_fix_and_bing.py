@@ -309,5 +309,58 @@ class SearchRoutingBraveTests(unittest.TestCase):
         self.assertNotIn("yandex", calls)
 
 
+class SearchRoutingYandexOfficialTests(unittest.TestCase):
+    """
+    When config['provider'] == 'yandex_official', the search module
+    uses the official Yandex Search API v2 provider and falls back
+    to the public Yandex endpoint on empty results.
+    """
+
+    def setUp(self):
+        sys.path.insert(0, str(REPO_ROOT))
+        from tests import test_search  # noqa: F401
+        self._load = test_search._load_search
+
+    def test_routes_to_yandex_official(self):
+        search, calls = self._load(
+            {"provider": "yandex_official"},
+            yandex_official_results=["yo1", "yo2"],
+            yandex_results=["y1"],
+        )
+        url = search.getresultbyquery("cat")
+        self.assertEqual(url, "yo1")
+        self.assertEqual(
+            search.get_provider_label("cat"), "Yandex (Official API)"
+        )
+        self.assertEqual(calls.get("yandex_official"), "cat")
+        self.assertNotIn("yandex", calls)
+
+    def test_falls_back_to_yandex(self):
+        search, calls = self._load(
+            {"provider": "yandex_official", "google_fallback_to_yandex": True},
+            yandex_official_results=[],
+            yandex_results=["y1"],
+        )
+        url = search.getresultbyquery("dog")
+        self.assertEqual(url, "y1")
+        self.assertEqual(
+            search.get_provider_label("dog"),
+            "Yandex (fallback from Yandex Official)",
+        )
+
+    def test_no_fallback(self):
+        search, calls = self._load(
+            {"provider": "yandex_official", "google_fallback_to_yandex": False},
+            yandex_official_results=[],
+            yandex_results=["y1"],
+        )
+        url = search.getresultbyquery("dog")
+        self.assertIsNone(url)
+        self.assertEqual(
+            search.get_provider_label("dog"), "Yandex (Official API)"
+        )
+        self.assertNotIn("yandex", calls)
+
+
 if __name__ == "__main__":
     unittest.main()

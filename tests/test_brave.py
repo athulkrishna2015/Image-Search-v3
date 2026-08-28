@@ -183,22 +183,29 @@ class BraveProviderRequestTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.exc_mod = types.ModuleType("requests.exceptions")
-        cls.exc_mod.Timeout = type("Timeout", (Exception,), {})
-        cls.exc_mod.RequestException = type("RequestException", (Exception,), {})
-        cls.exc_mod.HTTPError = type("HTTPError", (Exception,), {})
-        sys.modules["requests.exceptions"] = cls.exc_mod
+        # Use unique module names per test to avoid clobbering each other
+        # when the full test suite runs.
+        cls._exc_mod = types.ModuleType("requests.exceptions_brave")
+        cls._exc_mod.Timeout = type("Timeout", (Exception,), {})
+        cls._exc_mod.RequestException = type("RequestException", (Exception,), {})
+        cls._exc_mod.HTTPError = type("HTTPError", (Exception,), {})
 
     def setUp(self):
         self.brave = _load_brave(extra_aqt_config={"brave_api_key": "BSAkey"})
 
     def _install_fake_requests(self, fake_get):
         """Install a fake `requests` module with proper exceptions namespace."""
-        fake_requests = types.ModuleType("requests")
+        fake_requests = types.ModuleType(f"requests_brave_{id(self)}")
         fake_requests.get = fake_get
-        fake_requests.exceptions = self.exc_mod
+        fake_requests.exceptions = self._exc_mod
+        self._real_requests = sys.modules.pop("requests", None)
         sys.modules["requests"] = fake_requests
         self.brave = _load_brave(extra_aqt_config={"brave_api_key": "BSAkey"})
+
+    def tearDown(self):
+        sys.modules.pop("requests", None)
+        if getattr(self, "_real_requests", None) is not None:
+            sys.modules["requests"] = self._real_requests
 
     def test_missing_key_returns_empty(self):
         self.brave = _load_brave(extra_aqt_config={})
@@ -237,7 +244,7 @@ class BraveProviderRequestTests(unittest.TestCase):
     def test_returns_empty_on_4xx(self):
         def fake_get(url, params=None, headers=None, timeout=None):
             def raise_():
-                raise self.exc_mod.HTTPError("401")
+                raise self._exc_mod.HTTPError("401")
             return types.SimpleNamespace(
                 status_code=401, content=b"", raise_for_status=raise_
             )
@@ -251,7 +258,7 @@ class BraveProviderRequestTests(unittest.TestCase):
         def fake_get(url, params=None, headers=None, timeout=None):
             calls["n"] += 1
             if calls["n"] < 3:
-                raise self.exc_mod.Timeout("slow")
+                raise self._exc_mod.Timeout("slow")
             return types.SimpleNamespace(
                 status_code=200,
                 content=b"{}",
@@ -274,7 +281,7 @@ class BraveProviderRequestTests(unittest.TestCase):
 
     def test_returns_empty_after_max_retries(self):
         def fake_get(url, params=None, headers=None, timeout=None):
-            raise self.exc_mod.Timeout("dead")
+            raise self._exc_mod.Timeout("dead")
 
         import time as _t
         original = _t.sleep
