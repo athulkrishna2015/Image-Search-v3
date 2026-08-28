@@ -11,6 +11,7 @@ from aqt.qt import (
     QLineEdit,
     QListWidget,
     QListWidgetItem,
+    QAbstractItemView,
     QPushButton,
     QSpinBox,
     QVBoxLayout,
@@ -47,6 +48,9 @@ class NetworkTab(TabPage):
         self.provider_combo.addItem("DuckDuckGo (hidden API)", "duckduckgo")
         self.provider_combo.addItem("Google (Custom Search)", "google")
         self.provider_combo.currentIndexChanged.connect(self._on_dirty)
+        self.provider_combo.setToolTip(
+            "Provider used first for every image search."
+        )
         cur_provider = (self.config.get("provider") or "yandex")
         if cur_provider == "ddg":
             cur_provider = "duckduckgo"
@@ -61,6 +65,9 @@ class NetworkTab(TabPage):
             self.config.get("yandex_api_key", "")
         )
         self.yandex_official_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self.yandex_official_key_edit.setToolTip(
+            "Optional Yandex Cloud API key for the official Yandex provider."
+        )
         self.yandex_official_key_edit.textChanged.connect(self._on_dirty)
         prov_form.addRow("Yandex Official API key:", self.yandex_official_key_edit)
 
@@ -69,28 +76,48 @@ class NetworkTab(TabPage):
         self.yandex_official_folder_edit.setText(
             self.config.get("yandex_folder_id", "")
         )
+        self.yandex_official_folder_edit.setToolTip(
+            "Yandex Cloud folder ID used by the official API."
+        )
         self.yandex_official_folder_edit.textChanged.connect(self._on_dirty)
         prov_form.addRow("Yandex Cloud folder ID:", self.yandex_official_folder_edit)
 
         self.brave_key_edit = QLineEdit(prov_group)
         self.brave_key_edit.setPlaceholderText("BSA... (Brave Subscription Token)")
         self.brave_key_edit.setText(self.config.get("brave_api_key", ""))
+        self.brave_key_edit.setToolTip(
+            "Brave Search API subscription token. Leave empty if unused."
+        )
         self.brave_key_edit.textChanged.connect(self._on_dirty)
         prov_form.addRow("Brave API key:", self.brave_key_edit)
 
         self.google_key_edit = QLineEdit(prov_group)
         self.google_key_edit.setPlaceholderText("AIza... (API key)")
         self.google_key_edit.setText(self.config.get("google_api_key", ""))
+        self.google_key_edit.setToolTip(
+            "Google Custom Search JSON API key."
+        )
         self.google_key_edit.textChanged.connect(self._on_dirty)
         prov_form.addRow("Google API key:", self.google_key_edit)
 
         self.google_cx_edit = QLineEdit(prov_group)
         self.google_cx_edit.setPlaceholderText("cx like: 000000000000000000000:abcdefghi")
         self.google_cx_edit.setText(self.config.get("google_cx", ""))
+        self.google_cx_edit.setToolTip(
+            "Google Programmable Search Engine ID (cx)."
+        )
         self.google_cx_edit.textChanged.connect(self._on_dirty)
         prov_form.addRow("Google CSE ID (cx):", self.google_cx_edit)
 
         self.fallback_list = QListWidget(prov_group)
+        self.fallback_list.setToolTip(
+            "Checked providers are tried after the primary provider. "
+            "Drag rows to change priority. Uncheck a provider to skip it."
+        )
+        self.fallback_list.setDragDropMode(
+            QAbstractItemView.DragDropMode.InternalMove
+        )
+        self.fallback_list.setDefaultDropAction(Qt.DropAction.MoveAction)
         configured = self.config.get("fallback_providers")
         if configured is None:
             configured = (
@@ -106,7 +133,18 @@ class NetworkTab(TabPage):
             ("brave", "Brave"),
             ("google", "Google"),
         )
-        for key, label in fallback_options:
+        labels = dict(fallback_options)
+        valid_keys = set(labels)
+        configured = [
+            key if key in valid_keys else "duckduckgo" if key == "ddg" else key
+            for key in configured
+            if isinstance(key, str)
+            and (key in valid_keys or key == "ddg")
+        ]
+        ordered_keys = list(dict.fromkeys(configured))
+        ordered_keys.extend(key for key, _ in fallback_options if key not in ordered_keys)
+        for key in ordered_keys:
+            label = labels[key]
             item = QListWidgetItem(label, self.fallback_list)
             item.setData(Qt.ItemDataRole.UserRole, key)
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
@@ -114,6 +152,7 @@ class NetworkTab(TabPage):
                 Qt.CheckState.Checked if key in configured else Qt.CheckState.Unchecked
             )
         self.fallback_list.itemChanged.connect(self._on_dirty)
+        self.fallback_list.model().rowsMoved.connect(self._on_dirty)
         prov_form.addRow("Fallback providers:", self.fallback_list)
 
         outer.addWidget(prov_group)
@@ -129,12 +168,18 @@ class NetworkTab(TabPage):
         self.timeout_spin.setValue(
             safe_float(self.config.get("request_timeout_s", 10.0), 10.0)
         )
+        self.timeout_spin.setToolTip(
+            "Maximum seconds allowed for each provider request."
+        )
         self.timeout_spin.valueChanged.connect(self._on_dirty)
         net_form.addRow("Request timeout (s):", self.timeout_spin)
 
         self.retries_spin = QSpinBox(net_group)
         self.retries_spin.setRange(0, 10)
         self.retries_spin.setValue(safe_int(self.config.get("max_retries", 5), 5))
+        self.retries_spin.setToolTip(
+            "Retries after the first failed provider request."
+        )
         self.retries_spin.valueChanged.connect(self._on_dirty)
         net_form.addRow("Max retries:", self.retries_spin)
 
@@ -145,6 +190,9 @@ class NetworkTab(TabPage):
         self.backoff_spin.setValue(
             safe_float(self.config.get("backoff_base_s", 0.75), 0.75)
         )
+        self.backoff_spin.setToolTip(
+            "Initial delay between retries; later delays grow exponentially."
+        )
         self.backoff_spin.valueChanged.connect(self._on_dirty)
         net_form.addRow("Backoff base (s):", self.backoff_spin)
 
@@ -153,6 +201,7 @@ class NetworkTab(TabPage):
         # Reset button
         buttons_row = QHBoxLayout()
         reset_btn = QPushButton("Reset Network Defaults", wrapper)
+        reset_btn.setToolTip("Restore the default provider and network settings.")
         reset_btn.clicked.connect(self.reset_to_default)
         buttons_row.addWidget(reset_btn)
         buttons_row.addStretch()

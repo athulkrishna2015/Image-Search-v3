@@ -11,23 +11,22 @@ Releases on GitHub: <https://github.com/athulkrishna2015/Image-Search-v3/release
 
 ---
 
-## [3.12.1] — 2026-08-28
+## [3.12.2] — 2026-08-28
 
 ### Latest changes (summary)
 
-- **3.12.1 (2026-08-28)** — the post-update settings window now opens
-  automatically after a short delay when Anki finishes starting up,
-  and it selects the Support tab correctly even though the content is
-  wrapped in a scroll area.
+- **3.12.2 (2026-08-28)** — fallback providers can now be reordered by
+  dragging them in the Network tab, and the Network / Note Types / Logs
+  controls now have hover tooltips for their settings.
+
+### Added
+- Drag-and-drop fallback priority ordering in the Network tab.
+- Hover tooltips across the main settings controls so each option
+  explains itself on mouse hover.
 
 ### Changed
-- The post-update welcome is deferred by 1.5 seconds after menu setup
-  so it does not slow Anki startup and only runs once the main window
-  is available.
-- The automatic welcome now opens the settings dialog itself, rather
-  than only selecting the Support tab after a manual open.
-- The Support tab selection now targets the direct scroll-area tab,
-  not the inner widget.
+- The fallback provider list now preserves the saved drag order and
+  skips unchecked providers when building the chain.
 
 ### Changed
 - Global fallback routing now tries any configured provider after any
@@ -273,7 +272,9 @@ Releases on GitHub: <https://github.com/athulkrishna2015/Image-Search-v3/release
 
 ---
 
-[Unreleased]: https://github.com/athulkrishna2015/Image-Search-v3/compare/v3.12.1...HEAD
+[Unreleased]: https://github.com/athulkrishna2015/Image-Search-v3/compare/v3.12.2...HEAD
+[3.12.2]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.12.2
+[3.12.1]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.12.1
 [3.12.1]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.12.1
 [3.12.0]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.12.0
 [3.11.2]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.11.2

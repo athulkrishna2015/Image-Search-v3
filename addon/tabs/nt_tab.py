@@ -32,6 +32,7 @@ class NoteTypesTab(TabPage):
 
         # Left: list of note types
         self.note_types_list = QListWidget(self)
+        self.note_types_list.setToolTip("Note type whose image settings are being edited.")
         self.note_types_list.addItems([nt["name"] for nt in self.note_types])
         self.note_types_list.currentItemChanged.connect(self._on_selected)
         root.addWidget(self.note_types_list, 1)
@@ -45,6 +46,9 @@ class NoteTypesTab(TabPage):
 
         right_layout.addWidget(QLabel("Query Fields (for searching):", right))
         self.query_fields_list = QListWidget(right)
+        self.query_fields_list.setToolTip(
+            "Select one or more fields whose text is used as the search query."
+        )
         self.query_fields_list.setSelectionMode(
             QAbstractItemView.SelectionMode.MultiSelection
         )
@@ -53,11 +57,17 @@ class NoteTypesTab(TabPage):
 
         right_layout.addWidget(QLabel("Image Field (for placing image):", right))
         self.image_field_combo = QComboBox(right)
+        self.image_field_combo.setToolTip(
+            "Field where the downloaded image will be inserted."
+        )
         self.image_field_combo.currentIndexChanged.connect(self._mark_dirty)
         right_layout.addWidget(self.image_field_combo)
 
         right_layout.addWidget(QLabel("Image Placement:", right))
         self.placement_combo = QComboBox(right)
+        self.placement_combo.setToolTip(
+            "Replace the latest add-on image, append, or prepend the new image."
+        )
         self.placement_combo.addItem("Replace field content", "replace")
         self.placement_combo.addItem("Append to field", "append")
         self.placement_combo.addItem("Prepend to field", "prepend")
@@ -66,6 +76,9 @@ class NoteTypesTab(TabPage):
 
         buttons_row = QHBoxLayout()
         reset_btn = QPushButton("Reset Note-Type Defaults", right)
+        reset_btn.setToolTip(
+            "Reset this note type to the first query field, last image field, and replace mode."
+        )
         reset_btn.clicked.connect(self.reset_to_default)
         buttons_row.addWidget(reset_btn)
         buttons_row.addStretch()

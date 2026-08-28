@@ -98,6 +98,9 @@ class LogsTab(TabPage):
                 self.level_combo.setCurrentIndex(i)
                 break
         self.level_combo.currentIndexChanged.connect(self._on_level_changed)
+        self.level_combo.setToolTip(
+            "Controls how much diagnostic information is written to the log."
+        )
         controls_row.addWidget(self.level_combo, 0, 1)
 
         # Live update toggle
@@ -155,12 +158,16 @@ class LogsTab(TabPage):
         )
         self.check_btn.clicked.connect(self._check_log_file)
         self.clear_btn = QPushButton("Clear log")
+        self.clear_btn.setToolTip("Clear the current log and rotated backup files.")
         self.clear_btn.clicked.connect(self._clear_log)
         self.copy_btn = QPushButton("Copy")
+        self.copy_btn.setToolTip("Copy the visible log text to the clipboard.")
         self.copy_btn.clicked.connect(self._copy_text)
         self.open_btn = QPushButton("Open folder")
+        self.open_btn.setToolTip("Open the folder containing the log file.")
         self.open_btn.clicked.connect(self._open_folder)
         self.export_btn = QPushButton("Export…")
+        self.export_btn.setToolTip("Save a copy of the current log to another file.")
         self.export_btn.clicked.connect(self._export)
 
         for btn in (

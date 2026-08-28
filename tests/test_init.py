@@ -24,6 +24,14 @@ class AddonEntrypointTests(unittest.TestCase):
         self.assertIn("_schedule_update_welcome()", source)
         self.assertIn("settings_dialog()", source)
 
+    def test_fallback_list_supports_reordering_and_tooltip(self):
+        source = (REPO_ROOT / "addon" / "tabs" / "net_tab.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("QAbstractItemView.DragDropMode.InternalMove", source)
+        self.assertIn("rowsMoved.connect(self._on_dirty)", source)
+        self.assertIn("Drag rows to change priority", source)
+
 
 if __name__ == "__main__":
     unittest.main()
