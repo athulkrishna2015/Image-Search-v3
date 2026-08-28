@@ -19,6 +19,13 @@ Releases on GitHub: <https://github.com/athulkrishna2015/Image-Search-v3/release
   extracting `murl` values from the response HTML. Selectable as
   `provider = "bing"` in the Network tab; falls back to Yandex on
   empty results.
+- **Brave Image Search API provider** via the documented
+  `/res/v1/images/search` endpoint. Requires a Brave Search
+  subscription token (configurable in the Network tab as
+  `brave_api_key`). Returns up to 200 results per request by
+  preferring the `properties.url` (original) field, falling back to
+  `thumbnail.src` (Brave-proxied). Selectable as `provider = "brave"`.
+  Falls back to Yandex on empty results.
 - Logs tab "live update" toggle: the text area auto-refreshes
   whenever the log file's mtime changes (1.5s poll). Disabling the
   toggle stops the poll and keeps the view static. New content is
@@ -84,6 +91,14 @@ Releases on GitHub: <https://github.com/athulkrishna2015/Image-Search-v3/release
 - Added `tests/test_yandex_fix_and_bing.py` (12 tests) for the
   Yandex parser regression, the Bing provider extractor, and the
   Bing search-routing primary + fallback paths.
+- Added `tests/test_brave.py` (12 tests) for the Brave provider
+  parser (extracts `properties.url`, falls back to `thumbnail.src`,
+  never uses the top-level `url` which is the page URL), the
+  request shape (`X-Subscription-Token`, `count`, `safesearch`),
+  the missing-key short-circuit, the 4xx error path, the
+  retry-on-timeout loop, and the max-retries exit condition.
+- Added 3 routing tests for `provider = "brave"` (primary,
+  fallback to Yandex, no-fallback) in `tests/test_yandex_fix_and_bing.py`.
 
 ---
 

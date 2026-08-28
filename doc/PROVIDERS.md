@@ -1,10 +1,10 @@
 # Image Providers
 
-Image Search v3 ships with four providers. The active one is chosen
-by the `provider` config key (`"yandex"`, `"bing"`,
-`"duckduckgo"` / `"ddg"`, or `"google"`). All four share the same
+Image Search v3 ships with five providers. The active one is chosen
+by the `provider` config key (`"yandex"`, `"bing"`, `"brave"`,
+`"duckduckgo"` / `"ddg"`, or `"google"`). All five share the same
 retry / timeout / backoff settings (see [CONFIG.md](CONFIG.md)) and
-all four return a `list[str]` of absolute image URLs.
+all five return a `list[str]` of absolute image URLs.
 
 ## Yandex (default)
 
@@ -37,9 +37,36 @@ all four return a `list[str]` of absolute image URLs.
   Chrome User-Agent is required (Windows UAs have been observed to
   return a JS-only page). Returns ~30–50 results per query.
 
-## DuckDuckGo (hidden API)
+## Brave Image Search (API key required)
 
-- **Endpoints:**
+- **Endpoint:** `https://api.search.brave.com/res/v1/images/search`
+- **Auth:** required. The user enters the API key in the Network
+  tab; it is stored as `brave_api_key` in the add-on config and
+  sent as the `X-Subscription-Token` header.
+- **Request shape:**
+  ```
+  GET /res/v1/images/search
+    ?q=<URL-encoded query>
+    &count=50          (1..200, default 50)
+    &safesearch=strict (default for images)
+    &search_lang=en    (optional)
+    &country=US        (optional)
+  ```
+  with header `X-Subscription-Token: <brave_api_key>`.
+- **Response:** JSON `{ "results": [ { "title", "url" (page),
+  "thumbnail": { "src" }, "properties": { "url" (original image) } } ] }`.
+- **Parser notes:** we prefer `properties.url` (the original image
+  URL) and fall back to `thumbnail.src` when missing. The top-level
+  `url` is intentionally NOT used because it is the page URL, not
+  the image URL.
+- **Limitations:**
+  - Requires a paid plan (free tier: $5 monthly credit; see
+    <https://brave.com/search/api/>).
+  - 50 results per request by default; max 200. We do not paginate.
+  - 401/422/429 are returned as `[]` after retries.
+- **Caveats:** first-party API, documented and stable.
+
+## DuckDuckGo (hidden API)- **Endpoints:**
   - `https://duckduckgo.com/` — search page, used to extract the
     per-request `vqd` token (a CSRF-like value).
   - `https://duckduckgo.com/i.js` — the image search JSON endpoint.
@@ -84,6 +111,7 @@ based on `google_fallback_to_yandex`:
 | --- | --- | --- | --- |
 | `yandex` | Yandex | Yandex (empty) | n/a |
 | `bing` | Bing | Yandex (fallback) | Yandex (fallback) |
+| `brave` | Brave | Yandex (fallback) | Yandex (fallback) |
 | `duckduckgo` / `ddg` | DuckDuckGo | Yandex (fallback) | Yandex (fallback) |
 | `google` with fallback **on** | Google | Yandex (fallback) | Yandex (fallback) |
 | `google` with fallback **off** | Google | Google (empty) | Google (empty) |

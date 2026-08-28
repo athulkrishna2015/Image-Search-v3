@@ -33,6 +33,10 @@ tests/
 │                                serp-item), Bing provider extractor
 │                                (murl, dedup, retry), search routing for
 │                                provider=bing (primary + fallback)
+├── test_brave.py             ← Brave provider parser (properties.url
+│                                vs thumbnail.src vs url), request
+│                                shape (X-Subscription-Token, params,
+│                                timeout retry, 4xx, missing key)
 ├── test_bump_and_update.py   ← bump.py: validate / increment / sync / read /
                                  bump_version; update_check: should_show /
                                  mark_welcomed, opt-out, disabled, no-startup-

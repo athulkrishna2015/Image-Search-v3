@@ -19,6 +19,7 @@ shape.
 | `provider` | string | `"yandex"` | One of `"yandex"`, `"duckduckgo"` (alias `"ddg"`), `"google"`. |
 | `google_api_key` | string | `""` | Google Custom Search JSON API key. Only used when `provider == "google"`. |
 | `google_cx` | string | `""` | Google Custom Search Engine ID (`cx`). Only used when `provider == "google"`. |
+| `brave_api_key` | string | `""` | Brave Search API subscription token. Sent as `X-Subscription-Token`. Only used when `provider == "brave"`. |
 | `google_fallback_to_yandex` | bool | `true` | When the Google provider returns no results (or no key is configured), fall back to Yandex. |
 | `request_timeout_s` | float | `10.0` | Per-request timeout in seconds. Clamped to `[1.0, 120.0]`. |
 | `max_retries` | int | `5` | Number of retries after the first attempt (i.e. up to `max_retries+1` total requests). Clamped to `[0, 10]`. |

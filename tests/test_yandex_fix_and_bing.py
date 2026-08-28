@@ -260,5 +260,54 @@ class SearchRoutingBingTests(unittest.TestCase):
         )
 
 
+class SearchRoutingBraveTests(unittest.TestCase):
+    """
+    When config['provider'] == 'brave', the search module must use
+    the Brave provider and return its results; on empty results it
+    falls back to Yandex (when google_fallback_to_yandex is on).
+    """
+
+    def setUp(self):
+        sys.path.insert(0, str(REPO_ROOT))
+        from tests import test_search  # noqa: F401
+        self._load = test_search._load_search
+
+    def test_brave_routes_to_brave_provider(self):
+        search, calls = self._load(
+            {"provider": "brave"},
+            brave_results=["br1", "br2"],
+            yandex_results=["y1"],
+        )
+        url = search.getresultbyquery("nebula")
+        self.assertEqual(url, "br1")
+        self.assertEqual(search.get_provider_label("nebula"), "Brave")
+        self.assertEqual(calls.get("brave"), "nebula")
+        self.assertNotIn("yandex", calls)
+
+    def test_brave_falls_back_to_yandex(self):
+        search, calls = self._load(
+            {"provider": "brave", "google_fallback_to_yandex": True},
+            brave_results=[],
+            yandex_results=["y1"],
+        )
+        url = search.getresultbyquery("planet")
+        self.assertEqual(url, "y1")
+        self.assertEqual(
+            search.get_provider_label("planet"),
+            "Yandex (fallback from Brave)",
+        )
+
+    def test_brave_no_fallback(self):
+        search, calls = self._load(
+            {"provider": "brave", "google_fallback_to_yandex": False},
+            brave_results=[],
+            yandex_results=["y1"],
+        )
+        url = search.getresultbyquery("planet")
+        self.assertIsNone(url)
+        self.assertEqual(search.get_provider_label("planet"), "Brave")
+        self.assertNotIn("yandex", calls)
+
+
 if __name__ == "__main__":
     unittest.main()

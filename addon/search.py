@@ -30,6 +30,12 @@ try:
 except Exception:
     _get_bing = None
 
+# Brave Image Search API provider is optional (requires api key)
+try:
+    from .brave_images import get_brave_images as _get_brave
+except Exception:
+    _get_brave = None
+
 # Cache of image URL lists per query
 RESULTS: dict[str, list[str]] = {}
 
@@ -55,6 +61,8 @@ def _provider_label_from_config() -> str:
         return "Google"
     if provider == "bing":
         return "Bing"
+    if provider == "brave":
+        return "Brave"
     return "Yandex"
 
 
@@ -99,6 +107,16 @@ def _provider_results_and_label(q: str) -> tuple[list[str], str]:
             log.info("Bing provider unavailable or empty; falling back to Yandex for %r", q)
             return _get_yandex(q), "Yandex (fallback from Bing)"
         return [], "Bing"
+
+    if provider == "brave":
+        if _get_brave:
+            urls = _get_brave(q)
+            if urls:
+                return urls, "Brave"
+        if fallback_on:
+            log.info("Brave provider unavailable or empty; falling back to Yandex for %r", q)
+            return _get_yandex(q), "Yandex (fallback from Brave)"
+        return [], "Brave"
 
     if provider in ("duckduckgo", "ddg"):
         if _get_ddg:

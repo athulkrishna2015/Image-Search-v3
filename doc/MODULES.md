@@ -157,6 +157,19 @@ key required.**
 | `_MURL_RE` | Regex for `&quot;murl&quot;:&quot;…&quot;` (HTML-escaped URLs). |
 | `get_bing_images(q)` | `GET /images/async?q=…&first=1&count=20`, then extract + dedupe `murl` values. Returns `[]` on any error after retries. |
 
+## `addon/brave_images.py`
+
+Brave Image Search via the documented REST API. **API key required.**
+
+| Symbol | Purpose |
+| --- | --- |
+| `_BRAVE_URL` | `https://api.search.brave.com/res/v1/images/search`. |
+| `_COUNT` | Default 50 (max 200, no pagination). |
+| `_SAFESEARCH` | `"strict"`. |
+| `_get_brave_creds()` | Read `brave_api_key` from the add-on config. |
+| `get_brave_images(q)` | GET with `X-Subscription-Token` header. Returns `[]` if the key is missing or the request fails. |
+| `parse_brave_response(data)` | Walk the response and return a list of image URLs. Prefers `properties.url` (original), falls back to `thumbnail.src`. Never uses the top-level `url` because that is the page URL, not the image URL. |
+
 ## `addon/ui_editor.py`
 
 All editor-side UI: toolbar buttons, context menu, the
