@@ -23,6 +23,7 @@ def _load_search(config, ddg_results=None, yandex_results=None, google_results=N
         "addon.bing_images",
         "addon.brave_images",
         "addon.yandex_official",
+        "addon.logger",
         "addon",
         "anki",
         "anki.utils",
@@ -46,6 +47,16 @@ def _load_search(config, ddg_results=None, yandex_results=None, google_results=N
     # Stub addon.utils.get_config
     addon_utils = _make_module("addon.utils", get_config=lambda: config)
     sys.modules["addon.utils"] = addon_utils
+
+    # Search tests use fixture queries and must never write them to the
+    # add-on's real runtime log in addon/logs/.
+    noop_log = types.SimpleNamespace(
+        debug=lambda *a, **k: None,
+        info=lambda *a, **k: None,
+        warning=lambda *a, **k: None,
+        error=lambda *a, **k: None,
+    )
+    sys.modules["addon.logger"] = _make_module("addon.logger", log=noop_log)
 
     # Provider stubs with call capture
     calls = {}

@@ -229,6 +229,17 @@ class UpdateCheckTests(unittest.TestCase):
             saved = json.loads((Path(d) / "meta.json").read_text(encoding="utf-8"))
         self.assertEqual(saved["last_support_welcome_version"], "3.11.3")
 
+    def test_metadata_uses_loaded_addon_package(self):
+        # The test loader imports this package as `addon`; Anki imports an
+        # installed numeric folder as its numeric package name.
+        self.assertEqual(self.uc.ADDON_PACKAGE, "178037783")
+
+    def test_metadata_package_is_not_hardcoded_in_widgets(self):
+        source = (REPO_ROOT / "addon" / "tabs" / "widgets.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('__name__.split(".")[0]', source)
+
     def test_does_not_touch_startup(self):
         """
         The function only reads the manifest on call; it does not register

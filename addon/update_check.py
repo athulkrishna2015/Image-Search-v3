@@ -42,13 +42,14 @@ def current_version() -> str:
 def _get_meta() -> dict:
     """Read this add-on's `meta.json` (Anki-managed per-install state)."""
     manager_meta = {}
-    try:
-        if mw and getattr(mw, "addonManager", None):
-            meta = mw.addonManager.addonMeta(ADDON_PACKAGE) or {}
-            if isinstance(meta, dict):
-                manager_meta = meta
-    except Exception as exc:
-        log.warning("update_check: addonMeta read failed: %r", exc)
+    if ADDON_PACKAGE.isdigit():
+        try:
+            if mw and getattr(mw, "addonManager", None):
+                meta = mw.addonManager.addonMeta(ADDON_PACKAGE) or {}
+                if isinstance(meta, dict):
+                    manager_meta = meta
+        except Exception as exc:
+            log.warning("update_check: addonMeta read failed: %r", exc)
     try:
         local_meta = json.loads(
             (_addon_dir() / "meta.json").read_text(encoding="utf-8")
@@ -61,16 +62,16 @@ def _get_meta() -> dict:
 
 
 def _set_meta(meta: dict) -> None:
-    if not mw or not getattr(mw, "addonManager", None):
-        return
-    try:
-        mw.addonManager.writeAddonMeta(ADDON_PACKAGE, meta)
-        return
-    except Exception as exc:
-        log.warning(
-            "update_check: writeAddonMeta failed: %r; using local metadata",
-            exc,
-        )
+    # A source checkout is commonly imported as `addon`, which is not an
+    # Anki-registered package. In that environment write the local fallback
+    # directly and avoid a misleading addon-manager warning. Installed Anki
+    # add-ons use their numeric folder name as the module/package name.
+    if ADDON_PACKAGE.isdigit() and mw and getattr(mw, "addonManager", None):
+        try:
+            mw.addonManager.writeAddonMeta(ADDON_PACKAGE, meta)
+            return
+        except Exception as exc:
+            log.warning("update_check: writeAddonMeta failed: %r", exc)
 
     try:
         path = _addon_dir() / "meta.json"

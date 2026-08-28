@@ -2,5 +2,6 @@
 
 from __future__ import annotations
 
-# Anki add-on package id (also matches the leading '3' in 3.<major>.<minor>).
-ADDON_PACKAGE = "178037783"
+# Anki APIs resolve add-on metadata from the loaded module's package name.
+# This is numeric for an installed add-on and usually `addon` in a checkout.
+ADDON_PACKAGE = __name__.split(".")[0]

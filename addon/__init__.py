@@ -30,3 +30,8 @@ def setup() -> None:
 
     init_editor()
     init_menu()
+
+
+# Anki loads an add-on by importing this package. Register its UI at import
+# time so the Tools menu and editor toolbar are available in every session.
+setup()

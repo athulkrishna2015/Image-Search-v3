@@ -103,27 +103,11 @@ modules, JSON keys, errors, build, security, testing) lives under
 
 ### Latest changes (summary)
 
-- **Unreleased** — network image downloads now share the same
-  retry/backoff settings as the search providers; smart-replace no
-  longer calls `editor.loadNote()` (preserves focus, cursor, undo);
-  per-editor `last_query`; LRU touch on next/prev; sanitized
-  `mkstemp` prefix; HTML-escaped `image_tag`; throttled warning
-  modals; Yandex parser accepts both `data-bem` quote styles and
-  protocol-relative thumb URLs; stale `query_fields: ["Front"]`
-  default removed.
-- **Next** — Added a new keyless Bing provider (via
-  `/images/async`, no key, ~30–50 results per query); selectable in
-  the Network tab. Fixed the Yandex parser so it drills into the
-  nested `serp-item` object (previously returned 0 URLs for all
-  queries). Updated the DuckDuckGo User-Agent to a Linux Chrome
-  build (DDG returns 403 for some Windows UAs). The Logs tab now
-  has all controls at the top and auto-refreshes as new lines are
-  logged. The settings dialog is non-modal so the Anki main window
-  stays usable while it's open. The Logs tab gained a "Check log
-  file" button (scans for known error patterns) and a "Clear log on
-  add-on startup" checkbox (default on). **Added Brave Image Search
-  API** (requires subscription token; first-party documented API;
-  up to 200 results per request).
+- **3.12.0 (2026-08-28)** — global fallback routing now tries any
+  configured provider after any other provider returns no results or
+  errors; update-check metadata persistence now works in both Anki
+  installs and development symlink checkouts; packaging and release
+  docs updated for the 3.12.0 release.
 - **3.11.2 (2026-03-27)** — Ko-fi support widget; UPI / BTC / ETH QR
   codes on the Support tab.
 - **3.11.0 (2026-03-17)** — DuckDuckGo (hidden API) provider; emoji

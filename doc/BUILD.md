@@ -45,14 +45,14 @@ python3 bump.py minor
 python3 bump.py major
 
 # Package a specific version without bumping
-python3 make_ankiaddon.py 3.11.4
+python3 make_ankiaddon.py 3.12.0
 
 # Remove old .ankiaddon files first
 python3 make_ankiaddon.py --clean
 ```
 
 The result is `<addon_name>_v<version>_<timestamp>.ankiaddon` in the
-repo root (e.g. `Image_Search_v3_v3.11.3_202608280136.ankiaddon`).
+repo root (e.g. `Image_Search_v3_v3.12.0_202608280136.ankiaddon`).
 Older packages are kept on disk unless `--clean` is passed.
 
 ## Manual install (for testing)
