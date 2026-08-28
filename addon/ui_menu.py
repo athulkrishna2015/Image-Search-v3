@@ -156,6 +156,14 @@ class SettingsDialog(QDialog, SupportTabMixin):
         except Exception as exc:
             log.error("Settings save failed: %r", exc)
             self.status_label.setText("Could not save settings.")
+            return
+
+        # Invalidate the in-memory search cache so the next search
+        # picks up the new provider / fields instead of serving stale
+        # results from before the change.
+        from . import search as _search
+        _search.clear_cache()
+        log.info("settings saved; search cache cleared")
 
     def _save_and_close(self):
         self._save_only()
@@ -174,6 +182,11 @@ class SettingsDialog(QDialog, SupportTabMixin):
             # just clear the dirty flag and leave the UI as-is so
             # the user can see what they had, while not persisting.
             self.nt_tab.clear_dirty()
+        # Also clear the search cache so a cancelled save (which
+        # leaves the on-disk config unchanged) doesn't keep serving
+        # stale results from before the dialog opened.
+        from . import search as _search
+        _search.clear_cache()
         self._hide()
 
     def _hide(self):

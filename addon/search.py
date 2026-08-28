@@ -208,3 +208,15 @@ def getprevresultbyquery(query: str) -> str | None:
         INDICES[q] -= 1
     _touch_query(q)
     return _current_url(q)
+
+
+def clear_cache() -> None:
+    """
+    Drop all in-memory cached results. Called from the settings
+    dialog when the user Saves, so that a provider / query-field /
+    image-field change takes effect on the next search instead of
+    serving stale results from before the change.
+    """
+    RESULTS.clear()
+    INDICES.clear()
+    PROVIDERS.clear()

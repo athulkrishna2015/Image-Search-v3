@@ -177,6 +177,48 @@ class SearchProviderTests(unittest.TestCase):
         self.assertIn("q2", search.RESULTS)
         self.assertIn("q3", search.RESULTS)
 
+    def test_clear_cache_drops_everything(self):
+        config = {"provider": "ddg"}
+        search, _ = _load_search(config, ddg_results=["u1"])
+        search.getresultbyquery("q1")
+        search.getresultbyquery("q2")
+        self.assertIn("q1", search.RESULTS)
+        self.assertIn("q2", search.RESULTS)
+        search.clear_cache()
+        self.assertEqual(search.RESULTS, {})
+        self.assertEqual(search.INDICES, {})
+        self.assertEqual(search.PROVIDERS, {})
+
+    def test_clear_cache_then_getresult_uses_new_provider(self):
+        """
+        After a settings save (which calls clear_cache()), a new search
+        must use the freshly-saved provider config, not stale cached
+        results from the old provider.
+        """
+        # First, prime the cache with the Yandex provider.
+        search, calls = _load_search(
+            {"provider": "yandex"},
+            yandex_results=["y1"],
+            ddg_results=["d1"],
+        )
+        self.assertEqual(search.getresultbyquery("q"), "y1")
+        # Simulate a settings save that switches provider to ddg.
+        # We can't easily call SettingsDialog._save_only here, but the
+        # contract is: clear_cache() + next getresultbyquery reads
+        # the current config.
+        import json
+        from unittest.mock import patch
+
+        # Patch get_config to return the new config
+        new_cfg = {"provider": "ddg", "google_fallback_to_yandex": True}
+        with patch.object(
+            search.utils, "get_config", return_value=new_cfg
+        ):
+            search.clear_cache()
+            url = search.getresultbyquery("q")
+        self.assertEqual(url, "d1")
+        self.assertEqual(search.get_provider_label("q"), "DuckDuckGo")
+
 
 if __name__ == "__main__":
     unittest.main()
