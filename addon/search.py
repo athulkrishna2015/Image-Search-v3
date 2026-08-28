@@ -175,12 +175,6 @@ def _clean_query(query: str) -> str:
     return strip_html_media(query)
 
 
-def _provider_label_from_config() -> str:
-    cfg = utils.get_config() or {}
-    provider = (cfg.get("provider") or "yandex").lower()
-    return _label_for(provider)
-
-
 def _current_url(q: str) -> str | None:
     if q not in RESULTS or not RESULTS[q]:
         return None
