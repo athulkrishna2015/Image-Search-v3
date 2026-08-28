@@ -288,11 +288,22 @@ class GetYandexOfficialImagesTests(unittest.TestCase):
             captured["headers"]["Authorization"], "Api-Key yakey"
         )
         self.assertEqual(captured["headers"]["Content-Type"], "application/json")
-        self.assertEqual(captured["json"]["query"]["queryText"], "cat")
-        self.assertEqual(captured["json"]["query"]["searchType"], "com")
-        self.assertEqual(captured["json"]["query"]["familyMode"], "moderate")
-        self.assertEqual(captured["json"]["folderId"], "b1g_folder")
-        self.assertEqual(captured["json"]["docsOnPage"], "20")
+        # The Yandex v2 image/search API uses gRPC-style snake_case
+        # field names with ALL_CAPS prefix enum values. The short
+        # "com" / "moderate" in the config are translated to the
+        # full enums by _coerce_enum.
+        self.assertEqual(captured["json"]["query"]["query_text"], "cat")
+        self.assertEqual(captured["json"]["query"]["search_type"], "SEARCH_TYPE_COM")
+        self.assertEqual(captured["json"]["query"]["family_mode"], "FAMILY_MODE_MODERATE")
+        self.assertEqual(captured["json"]["query"]["fix_typo_mode"], "FIX_TYPO_MODE_OFF")
+        self.assertEqual(captured["json"]["folder_id"], "b1g_folder")
+        self.assertEqual(captured["json"]["docs_on_page"], "20")
+        # ImageSpec defaults to JPEG + MEDIUM + VERTICAL + COLOR because
+        # the API does not expose an "ANY" value for any of these fields.
+        self.assertEqual(captured["json"]["image_spec"]["format"], "IMAGE_FORMAT_JPEG")
+        self.assertEqual(captured["json"]["image_spec"]["size"], "IMAGE_SIZE_MEDIUM")
+        self.assertEqual(captured["json"]["image_spec"]["orientation"], "IMAGE_ORIENTATION_VERTICAL")
+        self.assertEqual(captured["json"]["image_spec"]["color"], "IMAGE_COLOR_COLOR")
 
     def test_retries_on_timeout(self):
         calls = {"n": 0}

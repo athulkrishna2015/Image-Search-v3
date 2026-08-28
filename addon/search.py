@@ -158,6 +158,16 @@ def _provider_results_and_label(q: str) -> tuple[list[str], str]:
         if fallback_on:
             log.info("Google returned no results; falling back to Yandex for %r", q)
             return _get_yandex(q), "Yandex (fallback from Google)"
+        # Log explicitly when Google is the configured provider but
+        # the gimages module reported no results - the most common
+        # cause is missing credentials (gimages already logs that),
+        # but we surface a routing-level message here too so the user
+        # can correlate "Google selected" with "no results" in the
+        # log without grepping.
+        log.info(
+            "Google selected but no results; check google_api_key and "
+            "google_cx in the Network tab."
+        )
         return [], "Google"
 
     return _get_yandex(q), "Yandex"

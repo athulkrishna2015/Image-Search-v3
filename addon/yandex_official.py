@@ -67,8 +67,62 @@ _USER_AGENT = (
     "(KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
 )
 
-_SEARCH_TYPES = ("ru", "tr", "com", "kk", "uz", "by")
-_FAMILY_MODES = ("none", "moderate", "strict")
+_SEARCH_TYPES = {
+    "ru": "SEARCH_TYPE_RU",
+    "tr": "SEARCH_TYPE_TR",
+    "com": "SEARCH_TYPE_COM",
+    "kk": "SEARCH_TYPE_KK",
+    "uz": "SEARCH_TYPE_UZ",
+    "by": "SEARCH_TYPE_BY",
+}
+_FAMILY_MODES = {
+    "none": "FAMILY_MODE_NONE",
+    "moderate": "FAMILY_MODE_MODERATE",
+    "strict": "FAMILY_MODE_STRICT",
+}
+_IMAGE_SPEC = {
+    "orientation": {
+        # The Yandex ImageSpec has no "ANY" orientation. The docs use
+        # VERTICAL by default; users can switch via config.
+        "any": "IMAGE_ORIENTATION_VERTICAL",
+        "vertical": "IMAGE_ORIENTATION_VERTICAL",
+        "horizontal": "IMAGE_ORIENTATION_HORIZONTAL",
+        "square": "IMAGE_ORIENTATION_SQUARE",
+    },
+    "color": {
+        # The Yandex API has no "ANY" color value; the closest
+        # default is IMAGE_COLOR_COLOR (any non-grayscale).
+        "any": "IMAGE_COLOR_COLOR",
+        "color": "IMAGE_COLOR_COLOR",
+        "gray": "IMAGE_COLOR_GRAY",
+        "grey": "IMAGE_COLOR_GRAY",
+        "red": "IMAGE_COLOR_RED",
+        "orange": "IMAGE_COLOR_ORANGE",
+        "yellow": "IMAGE_COLOR_YELLOW",
+        "green": "IMAGE_COLOR_GREEN",
+        "cyan": "IMAGE_COLOR_CYAN",
+        "blue": "IMAGE_COLOR_BLUE",
+        "violet": "IMAGE_COLOR_VIOLET",
+        "white": "IMAGE_COLOR_WHITE",
+        "black": "IMAGE_COLOR_BLACK",
+    },
+    "format": {
+        # No ANY for format. JPEG is the docs' default.
+        "any": "IMAGE_FORMAT_JPEG",
+        "jpeg": "IMAGE_FORMAT_JPEG",
+        "png": "IMAGE_FORMAT_PNG",
+        "gif": "IMAGE_FORMAT_GIF",
+    },
+    "size": {
+        # No ANY for size. MEDIUM is the docs' default.
+        "any": "IMAGE_SIZE_MEDIUM",
+        "small": "IMAGE_SIZE_SMALL",
+        "medium": "IMAGE_SIZE_MEDIUM",
+        "large": "IMAGE_SIZE_LARGE",
+        "wallpaper": "IMAGE_SIZE_WALLPAPER",
+        "enormous": "IMAGE_SIZE_ENORMOUS",
+    },
+}
 
 
 def _get_creds() -> tuple[str, str]:
@@ -83,46 +137,69 @@ def _get_creds() -> tuple[str, str]:
     )
 
 
-def _coerce(value: str, allowed: tuple, default: str) -> str:
-    if value in allowed:
-        return value
-    return default
+def _coerce_enum(value, mapping, default):
+    if not value:
+        return default
+    raw = str(value).strip()
+    if not raw:
+        return default
+    # Already a full prefix form?
+    for v in mapping.values():
+        if raw == v:
+            return v
+    # Short form.
+    return mapping.get(raw.lower(), default)
 
 
 def _build_payload(query: str) -> dict:
-    """Build the JSON body for the text-to-image search query."""
-    api_key, folder_id = _get_creds()
+    """
+    Build the JSON body for the text-to-image search query.
+
+    The Yandex Search API v2 uses gRPC-style snake_case field names
+    with ALL_CAPS prefix enums (FIX_TYPO_MODE_OFF,
+    IMAGE_ORIENTATION_VERTICAL, etc.). We accept user-friendly
+    short forms in the config and translate them here.
+    """
     try:
         cfg = mw.addonManager.getConfig(__name__) or {}
     except Exception:
         cfg = {}
-    search_type = _coerce(
-        (cfg.get("yandex_official_search_type") or "com").lower(),
-        _SEARCH_TYPES, "com",
-    )
-    family_mode = _coerce(
-        (cfg.get("yandex_official_family_mode") or "moderate").lower(),
-        _FAMILY_MODES, "moderate",
-    )
     return {
         "query": {
-            "searchType": search_type,
-            "queryText": query,
-            "familyMode": family_mode,
+            "search_type": _coerce_enum(
+                cfg.get("yandex_official_search_type"),
+                _SEARCH_TYPES, "SEARCH_TYPE_COM",
+            ),
+            "query_text": query,
+            "family_mode": _coerce_enum(
+                cfg.get("yandex_official_family_mode"),
+                _FAMILY_MODES, "FAMILY_MODE_MODERATE",
+            ),
             "page": "0",
-            "fixTypoMode": "on",
+            "fix_typo_mode": "FIX_TYPO_MODE_OFF",
         },
-        "imageSpec": {
-            "format": "any",
-            "size": "any",
-            "orientation": "any",
-            "color": "any",
+        "image_spec": {
+            "format": _coerce_enum(
+                cfg.get("yandex_official_format"),
+                _IMAGE_SPEC["format"], "IMAGE_FORMAT_JPEG",
+            ),
+            "size": _coerce_enum(
+                cfg.get("yandex_official_size"),
+                _IMAGE_SPEC["size"], "IMAGE_SIZE_MEDIUM",
+            ),
+            "orientation": _coerce_enum(
+                cfg.get("yandex_official_orientation"),
+                _IMAGE_SPEC["orientation"], "IMAGE_ORIENTATION_VERTICAL",
+            ),
+            "color": _coerce_enum(
+                cfg.get("yandex_official_color"),
+                _IMAGE_SPEC["color"], "IMAGE_COLOR_COLOR",
+            ),
         },
-        "docsOnPage": "20",
-        "folderId": folder_id,
-        "userAgent": _USER_AGENT,
+        "docs_on_page": "20",
+        "folder_id": _get_creds()[1],
+        "user_agent": _USER_AGENT,
     }
-
 
 def get_yandex_official_images(query: str) -> list[str]:
     """
