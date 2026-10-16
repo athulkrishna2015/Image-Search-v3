@@ -11,6 +11,32 @@ Releases on GitHub: <https://github.com/athulkrishna2015/Image-Search-v3/release
 
 ---
 
+## [3.12.3] — 2026-10-16
+
+### Latest changes (summary)
+
+- **3.12.3 (2026-10-16)** — you can now run **several searches on the same
+  card**: in *Replace* placement a new query appends its image instead of
+  overwriting the previous one, so only the ⬅ ➡ browsing of the same query
+  swaps an image in place. Also adds the GitHub Actions release pipeline
+  (tests → build → attach → AnkiWeb upload).
+
+### Added
+- Multi-search support: each new query on a card appends a new image, so
+  a card can hold an image per searched term instead of just the last one.
+- `.github/workflows/release.yml`: publishing a GitHub release now runs
+  the tests, rebuilds the `.ankiaddon` from the tag, attaches it, and
+  uploads it to AnkiWeb (addon `178037783`) automatically.
+
+### Changed
+- In *Replace* placement, the last `<img class="imgsearch">` is swapped
+  in place only while browsing (re-searching the **same** query via ⬅ ➡ or
+  the 🖼 button); a **different** query appends. The in-place swap keeps
+  editor focus, undo history, and the selection intact.
+- The Image Placement tooltip now explains the replace/append distinction.
+
+---
+
 ## [3.12.2] — 2026-08-28
 
 ### Latest changes (summary)
@@ -274,7 +300,7 @@ Releases on GitHub: <https://github.com/athulkrishna2015/Image-Search-v3/release
 
 [Unreleased]: https://github.com/athulkrishna2015/Image-Search-v3/compare/v3.12.2...HEAD
 [3.12.2]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.12.2
-[3.12.1]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.12.1
+[3.12.3]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.12.3
 [3.12.1]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.12.1
 [3.12.0]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.12.0
 [3.11.2]: https://github.com/athulkrishna2015/Image-Search-v3/releases/tag/v3.11.2

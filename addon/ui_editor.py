@@ -28,6 +28,22 @@ def _set_last_query(editor, q):
         pass
 
 
+def _clean_for_compare(q):
+    if not q:
+        return ""
+    try:
+        from anki.utils import strip_html_media
+        return strip_html_media(q).strip().lower()
+    except Exception:
+        return str(q).strip().lower()
+
+
+def _is_new_query(last, current):
+    if not last:
+        return True
+    return _clean_for_compare(last) != _clean_for_compare(current)
+
+
 def _replace_last_imgsearch_tag(html: str, new_img_tag: str):
     pattern = r'(<img[^>]*\bclass="[^"]*\bimgsearch\b[^"]*"[^>]*>)'
     matches = list(re.finditer(pattern, html, flags=re.IGNORECASE))
@@ -37,7 +53,7 @@ def _replace_last_imgsearch_tag(html: str, new_img_tag: str):
     return html[:start] + new_img_tag + html[end:]
 
 
-def display_image(editor, img_filename, image_dest_field_index):
+def display_image(editor, img_filename, image_dest_field_index, is_new_search=False):
     img_tag = utils.image_tag(img_filename)
     config = utils.get_config()
     nt_id = str(editor.note.model()["id"])
@@ -56,8 +72,14 @@ def display_image(editor, img_filename, image_dest_field_index):
         sep = " " if current else ""
         new_value = img_tag + sep + current
     else:
-        # Smart replace (in-place swap preserves editor focus, undo, and selection).
-        if current and current.strip():
+        # Replace mode: cycling the SAME query (next/prev, or re-search of
+        # the same word) swaps the last add-on image in place, preserving
+        # editor focus. A NEW query appends so multiple searches can coexist
+        # on the same card without wiping the previous image.
+        if is_new_search:
+            sep = " " if current and current.strip() else ""
+            new_value = (current + sep + img_tag) if current else img_tag
+        elif current and current.strip():
             replaced = _replace_last_imgsearch_tag(current, img_tag)
             if replaced is not None:
                 new_value = replaced
@@ -90,6 +112,7 @@ def on_search(editor):
         utils.report("No text selected and no query field content found.")
         return
 
+    is_new = _is_new_query(_get_last_query(editor), query)
     _set_last_query(editor, query)
     log.info("on_search: query=%r", query)
     image_url = search.getresultbyquery(query)
@@ -110,7 +133,7 @@ def on_search(editor):
         _show_download_error(err or "unexpected")
         return
 
-    display_image(editor, img_filename, idx)
+    display_image(editor, img_filename, idx, is_new_search=is_new)
 
 
 def on_previous(editor):

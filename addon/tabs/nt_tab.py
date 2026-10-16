@@ -66,7 +66,8 @@ class NoteTypesTab(TabPage):
         right_layout.addWidget(QLabel("Image Placement:", right))
         self.placement_combo = QComboBox(right)
         self.placement_combo.setToolTip(
-            "Replace the latest add-on image, append, or prepend the new image."
+            "Replace: browsing the same search swaps the image, a new search appends. "
+            "Append / Prepend always add the new image."
         )
         self.placement_combo.addItem("Replace field content", "replace")
         self.placement_combo.addItem("Append to field", "append")
