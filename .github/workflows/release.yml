@@ -12,6 +12,12 @@ name: Release
 #      tags, support page and single open-ended branch, and refreshing the
 #      listing description from README.md.
 #
+# Branch syntax gotcha: the uploader rejects a bare `2.1.1+` with
+# "The branch must have 2 versions separated by dash". A branch must always
+# be `min-max`, where the trailing `+` is what makes it open-ended -- so
+# `2.1.1-26.05+` keeps the listing's existing "all versions" coverage while
+# passing validation.
+#
 # One-time setup (repo Settings -> Secrets and variables -> Actions -> Secrets):
 #   - ANKIWEB_USERNAME  (AnkiWeb login email)
 #   - ANKIWEB_PASSWORD  (plain-password auth; interactive 2FA is unsupported)
@@ -183,6 +189,6 @@ jobs:
           title: Image Search v3
           tags: Image search yandex
           support-page: https://github.com/athulkrishna2015/Image-Search-v3
-          branches: 2.1.1+
+          branches: 2.1.1-26.05+
           description-file: README.md
           addon-files: ${{ steps.build.outputs.ankiaddon }}

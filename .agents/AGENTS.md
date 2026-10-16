@@ -145,9 +145,16 @@ Release invariants:
 - **One-time secrets:** `ANKIWEB_USERNAME` / `ANKIWEB_PASSWORD` in repo Settings
   → Secrets and variables → Actions. Never commit or echo them. The local source
   of truth lives in the `ankiweb-api` sibling repo's gitignored `.env`.
-- The listing (AnkiWeb addon `178037783`, "Image Search v3", branch `2.1.1+`) has
-  its title, tags and support page re-sent on every upload — change those in the
-  workflow, not by hand.
+- The listing (AnkiWeb addon `178037783`, "Image Search v3", branch `2.1.1-26.05+`)
+  has its title, tags and support page re-sent on every upload — change those in
+  the workflow, not by hand.
+- **The branch string must be `min-max`.** A bare `2.1.1+` is rejected by the
+  uploader with *"The branch must have 2 versions separated by dash"* and the
+  upload is refused (nothing is damaged, but nothing ships either). The trailing
+  `+` is what keeps the branch open-ended, so `2.1.1-26.05+` preserves the
+  listing's existing all-versions coverage. AnkiWeb itself *renders* this as
+  `2.1.1+` — `ankicli.py download` then reports `minpt=1 maxpt=1`. That display
+  form is not a valid upload input.
 - Uploads go through
   [`athulkrishna2015/ankiweb-api`](https://github.com/athulkrishna2015/ankiweb-api).
   Verify afterwards with that repo's `ankicli.py info 178037783`, and for a
