@@ -92,12 +92,12 @@ jobs:
           fi
 
       - name: Check out the ref
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ steps.ref.outputs.ref }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -177,6 +177,20 @@ jobs:
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --title "Image Search v3 ${{ steps.version.outputs.version }}" --generate-notes
           fi
+          # Artifact names carry a build timestamp, so --clobber never matches
+          # an earlier build of the *same* version. A failed-then-retried
+          # release would otherwise keep every superseded build, and users
+          # would have several files to choose between. Keep only this run's.
+          prefix="Image_Search_v3_v${{ steps.version.outputs.version }}_"
+          while IFS= read -r asset; do
+            [ -n "$asset" ] || continue
+            case "$asset" in
+              "$prefix"*.ankiaddon)
+                echo "Removing superseded asset: $asset"
+                gh release delete-asset "$TAG" "$asset" --yes
+                ;;
+            esac
+          done < <(gh release view "$TAG" --json assets --jq '.assets[].name')
           gh release upload "$TAG" "${{ steps.build.outputs.ankiaddon }}" --clobber
 
       - name: Upload to AnkiWeb
